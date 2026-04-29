@@ -1,0 +1,285 @@
+<template>
+  <div>
+    <button data-testid="trigger" class="ir__trigger" @click="open = true">Report Issue</button>
+
+    <div v-if="open" data-testid="modal" class="ir__overlay" @click.self="open = false">
+      <div class="ir__modal">
+        <h2 class="ir__title">Report Issue</h2>
+
+        <template v-if="!issueUrl">
+          <div class="ir__fields">
+            <div class="ir__field">
+              <label class="ir__label" for="ir-title">Title</label>
+              <input
+                id="ir-title"
+                data-testid="title"
+                class="ir__input"
+                v-model="form.title"
+                placeholder="Short summary"
+              />
+            </div>
+            <div class="ir__field">
+              <label class="ir__label" for="ir-type">Type</label>
+              <select id="ir-type" data-testid="type" class="ir__select" v-model="form.type">
+                <option v-for="t in issueTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
+              </select>
+            </div>
+            <div class="ir__field">
+              <label class="ir__label" for="ir-desc">Description</label>
+              <textarea
+                id="ir-desc"
+                data-testid="description"
+                class="ir__textarea"
+                v-model="form.description"
+                placeholder="Steps to reproduce, expected behaviour, etc."
+                rows="5"
+              />
+            </div>
+            <div class="ir__context">
+              <span class="ir__label">Context</span>
+              <span class="ir__contextValue">{{ contextText }}</span>
+            </div>
+          </div>
+
+          <div class="ir__error" v-if="error">{{ error }}</div>
+
+          <div class="ir__actions">
+            <button class="ir__btn ir__btn--ghost" @click="open = false">Cancel</button>
+            <button data-testid="submit" class="ir__btn ir__btn--primary" :disabled="submitting" @click="submit">
+              {{ submitting ? 'Submitting…' : 'Submit Issue' }}
+            </button>
+          </div>
+        </template>
+
+        <template v-else>
+          <p class="ir__successMsg">Issue created successfully.</p>
+          <a data-testid="issue-link" class="ir__issueLink" :href="issueUrl" target="_blank" rel="noopener">{{ issueUrl }}</a>
+          <div class="ir__actions">
+            <button class="ir__btn ir__btn--ghost" @click="open = false">Close</button>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, computed } from 'vue'
+
+const props = defineProps({
+  mode: { type: String, required: true },
+  repo: { type: String, default: '' },
+  token: { type: String, default: '' },
+  context: { type: [String, Object], default: null },
+  issueTypes: {
+    type: Array,
+    default: () => [
+      { label: 'Bug', value: 'bug' },
+      { label: 'Feature Request', value: 'enhancement' },
+    ],
+  },
+})
+
+const open = ref(false)
+const form = reactive({ title: '', type: 'bug', description: '' })
+const error = ref('')
+const submitting = ref(false)
+const issueUrl = ref('')
+
+const contextText = computed(() => {
+  if (props.context) return typeof props.context === 'string' ? props.context : JSON.stringify(props.context)
+  return window.location.href
+})
+
+async function submit() {
+  error.value = ''
+  submitting.value = true
+  try {
+    const issueBody = `${form.description}\n\n---\n**Context:** ${contextText.value}`
+    let res, data
+
+    if (props.mode === 'proxy') {
+      res = await fetch('/api/github/issues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: form.title, body: issueBody, label: form.type }),
+      })
+      data = await res.json()
+      if (!res.ok) { error.value = data.error || 'Submission failed'; return }
+      issueUrl.value = data.url
+    } else {
+      res = await fetch(`https://api.github.com/repos/${props.repo}/issues`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${props.token}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+        body: JSON.stringify({ title: form.title, body: issueBody, labels: [form.type] }),
+      })
+      data = await res.json()
+      if (!res.ok) { error.value = data.message || 'Submission failed'; return }
+      issueUrl.value = data.html_url
+    }
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    submitting.value = false
+  }
+}
+</script>
+
+<style scoped>
+.ir__trigger {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100;
+  padding: 10px 16px;
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ir__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.ir__modal {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 24px;
+  width: 480px;
+  max-width: 95vw;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.ir__title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 20px;
+}
+
+.ir__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ir__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ir__label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ir__input,
+.ir__select,
+.ir__textarea {
+  padding: 8px 10px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: #fafafa;
+  color: #111;
+  font: inherit;
+  font-size: 14px;
+}
+
+.ir__input:focus,
+.ir__select:focus,
+.ir__textarea:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
+}
+
+.ir__textarea {
+  resize: vertical;
+}
+
+.ir__context {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ir__contextValue {
+  font-size: 12px;
+  color: #888;
+  font-family: monospace;
+  word-break: break-all;
+}
+
+.ir__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.ir__btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.ir__btn--ghost {
+  background: transparent;
+  border-color: #d0d0d0;
+  color: #444;
+}
+
+.ir__btn--primary {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.ir__btn--primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ir__error {
+  padding: 8px 12px;
+  background: #fff0f0;
+  border: 1px solid #f5c6c6;
+  border-radius: 4px;
+  color: #c0392b;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.ir__successMsg {
+  font-size: 14px;
+  color: #111;
+  margin-bottom: 10px;
+}
+
+.ir__issueLink {
+  display: block;
+  font-size: 12px;
+  color: #4a90e2;
+  word-break: break-all;
+  margin-bottom: 4px;
+}
+</style>
