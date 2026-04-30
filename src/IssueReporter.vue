@@ -1,6 +1,13 @@
 <template>
   <div class="issueReporter">
-    <button data-testid="trigger" class="ir__trigger" @click="openModal">Report Issue</button>
+    <button data-testid="trigger" class="ir__trigger" @click="openModal" aria-label="Report Issue">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+           aria-hidden="true">
+        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+        <line x1="4" y1="22" x2="4" y2="15"/>
+      </svg>
+    </button>
 
     <div v-if="open" data-testid="modal" class="ir__overlay" @click.self="open = false">
       <div class="ir__modal">
@@ -125,13 +132,18 @@ async function handleSubmit() {
   bottom: 24px;
   right: 24px;
   z-index: 100;
-  padding: 10px 16px;
-  background: #1a1a1a;
-  color: #fff;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #1a1a1a;
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 12px;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
 .ir__overlay {
