@@ -251,7 +251,7 @@ async function handleSubmit() {
 }
 
 .ir__btn--primary {
-  background: #1a1a1a;
+  background: #2a9d4e;
   color: #fff;
 }
 
