@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="issueReporter">
     <button data-testid="trigger" class="ir__trigger" @click="open = true">Report Issue</button>
 
     <div v-if="open" data-testid="modal" class="ir__overlay" @click.self="open = false">
@@ -45,7 +45,7 @@
 
           <div class="ir__actions">
             <button class="ir__btn ir__btn--ghost" @click="open = false">Cancel</button>
-            <button data-testid="submit" class="ir__btn ir__btn--primary" :disabled="submitting" @click="submit">
+            <button data-testid="submit" class="ir__btn ir__btn--primary" :disabled="submitting" @click="handleSubmit">
               {{ submitting ? 'Submitting…' : 'Submit Issue' }}
             </button>
           </div>
@@ -67,9 +67,7 @@
 import { ref, reactive, computed } from 'vue'
 
 const props = defineProps({
-  mode: { type: String, required: true },
-  repo: { type: String, default: '' },
-  token: { type: String, default: '' },
+  submit: { type: Function, required: true },
   context: { type: [String, Object], default: null },
   issueTypes: {
     type: Array,
@@ -91,37 +89,17 @@ const contextText = computed(() => {
   return window.location.href
 })
 
-async function submit() {
+async function handleSubmit() {
   error.value = ''
   submitting.value = true
   try {
-    const issueBody = `${form.description}\n\n---\n**Context:** ${contextText.value}`
-    let res, data
-
-    if (props.mode === 'proxy') {
-      res = await fetch('/api/github/issues', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: form.title, body: issueBody, label: form.type }),
-      })
-      data = await res.json()
-      if (!res.ok) { error.value = data.error || 'Submission failed'; return }
-      issueUrl.value = data.url
-    } else {
-      res = await fetch(`https://api.github.com/repos/${props.repo}/issues`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${props.token}`,
-          'Content-Type': 'application/json',
-          Accept: 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-        body: JSON.stringify({ title: form.title, body: issueBody, labels: [form.type] }),
-      })
-      data = await res.json()
-      if (!res.ok) { error.value = data.message || 'Submission failed'; return }
-      issueUrl.value = data.html_url
-    }
+    const result = await props.submit({
+      title: form.title,
+      description: form.description,
+      type: form.type,
+      context: contextText.value,
+    })
+    issueUrl.value = result.url
   } catch (e) {
     error.value = e.message
   } finally {
@@ -131,6 +109,10 @@ async function submit() {
 </script>
 
 <style scoped>
+.issueReporter {
+  font-family:system-ui;
+}
+
 .ir__trigger {
   position: fixed;
   bottom: 24px;

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "exports": {
-    ".": "./src/IssueReporter.vue",
+    ".": "./src/index.js",
     "./server": "./src/server.js"
   },
   "workspaces": [

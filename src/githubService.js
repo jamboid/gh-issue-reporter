@@ -1,9 +1,8 @@
-export function githubService({ repo }) {
+export function githubService({ repo, token }) {
+  if (!token) throw { status: 503, message: 'token is required' }
+
   return {
     async createIssue({ title, body, label }) {
-      const token = process.env.GITHUB_TOKEN
-      if (!token) throw { status: 503, message: 'GITHUB_TOKEN env var not set' }
-
       const res = await fetch(`https://api.github.com/repos/${repo}/issues`, {
         method: 'POST',
         headers: {

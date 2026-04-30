@@ -2,19 +2,15 @@
   <main class="demo">
     <h1>gh-issue-reporter demo</h1>
     <p>Click the button in the bottom-right corner to report an issue against this package's repo.</p>
-    <IssueReporter
-      mode="direct"
-      repo="jamboid/gh-issue-reporter"
-      :token="token"
-      context="demo page"
-    />
+    <IssueReporter :submit="submit" context="demo page" />
   </main>
 </template>
 
 <script setup>
-import IssueReporter from '@jamboid/gh-issue-reporter'
+import IssueReporter, { createDirectAdapter } from '@jamboid/gh-issue-reporter'
 
 const token = import.meta.env.VITE_GITHUB_TOKEN || ''
+const submit = createDirectAdapter({ repo: 'jamboid/gh-issue-reporter', token })
 </script>
 
 <style>

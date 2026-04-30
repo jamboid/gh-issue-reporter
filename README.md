@@ -11,9 +11,7 @@ Eliminates copy-pasting issue reporting code across projects. Install once as a 
 - Fixed floating button (bottom-right) that opens a modal on click
 - Form with title, issue type select, and description textarea
 - Current app context (URL or custom string/object) appended to every issue body
-- Two auth modes:
-  - **direct** — component calls the GitHub API from the browser using a token prop
-  - **proxy** — component posts to your app's Express backend (`/api/github/issues`), keeping the token server-side
+- Submission is handled by a **submission adapter** you provide — use the built-in adapters or write your own
 - Success state shows a link to the created issue; error state shows the failure message inline
 - Fully self-contained styles — no dependency on the host app's design system
 
@@ -40,42 +38,57 @@ server: { fs: { allow: ['..'] } }
 
 ### Direct mode (client-only apps)
 
-```vue
-<IssueReporter
-  mode="direct"
-  repo="owner/repo"
-  :token="token"
-  :context="currentRoute"
-/>
+```js
+import IssueReporter, { createDirectAdapter } from '@jamboid/gh-issue-reporter'
+
+const token = import.meta.env.VITE_GITHUB_TOKEN
+const submit = createDirectAdapter({ repo: 'owner/repo', token })
 ```
 
-```js
-import IssueReporter from '@jamboid/gh-issue-reporter'
-const token = import.meta.env.VITE_GITHUB_TOKEN
+```vue
+<IssueReporter :submit="submit" :context="currentRoute" />
 ```
 
 ### Proxy mode (apps with an Express backend)
 
+```js
+import IssueReporter, { createProxyAdapter } from '@jamboid/gh-issue-reporter'
+
+const submit = createProxyAdapter() // defaults to /api/github/issues
+```
+
 ```vue
-<IssueReporter mode="proxy" :context="currentRoute" />
+<IssueReporter :submit="submit" :context="currentRoute" />
 ```
 
 Register the server-side router in your Express app:
 
 ```js
 import { githubRouter, githubService } from '@jamboid/gh-issue-reporter/server'
-app.use('/api/github', githubRouter(githubService({ repo: 'owner/repo' })))
+
+const token = process.env.GITHUB_TOKEN
+app.use('/api/github', githubRouter(githubService({ repo: 'owner/repo', token })))
 ```
 
-The service reads `GITHUB_TOKEN` from `process.env`.
+### Custom adapter
+
+Supply any async function matching the signature:
+
+```js
+// ({ title, description, type, context }) => Promise<{ url: string }>
+const submit = async ({ title, description, type, context }) => {
+  const res = await fetch('/my/endpoint', { method: 'POST', body: JSON.stringify({ title, description, type, context }) })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message)
+  return { url: data.url }
+}
+```
 
 ## Props
 
 | Prop | Type | Default | Notes |
 |---|---|---|---|
-| `mode` | `String` | — | **Required.** `'direct'` or `'proxy'` |
-| `repo` | `String` | `''` | Required for direct mode. `'owner/repo'` |
-| `token` | `String` | `''` | Required for direct mode |
+| `submit` | `Function` | — | **Required.** `({ title, description, type, context }) => Promise<{ url }>` |
 | `context` | `String\|Object` | `null` | Falls back to `window.location.href` |
 | `issueTypes` | `Array<{label, value}>` | Bug / Feature Request | Options for the type select |
 
