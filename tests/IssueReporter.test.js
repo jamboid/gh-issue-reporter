@@ -68,6 +68,20 @@ describe('IssueReporter', () => {
     expect(wrapper.find('[data-testid="title"]').exists()).toBe(false)
   })
 
+  it('resets to form state when reopened after success', async () => {
+    const wrapper = mount(IssueReporter, { props: { submit } })
+    await wrapper.find('[data-testid="trigger"]').trigger('click')
+    await wrapper.find('[data-testid="submit"]').trigger('click')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="issue-link"]').exists()).toBe(true)
+
+    await wrapper.find('[data-testid="modal"]').trigger('click') // close via backdrop
+    await wrapper.find('[data-testid="trigger"]').trigger('click') // reopen
+
+    expect(wrapper.find('[data-testid="title"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="issue-link"]').exists()).toBe(false)
+  })
+
   it('shows error message and keeps form visible on failure', async () => {
     submit.mockRejectedValue(new Error('Validation failed'))
     const wrapper = mount(IssueReporter, { props: { submit } })

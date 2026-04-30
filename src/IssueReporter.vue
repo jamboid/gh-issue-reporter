@@ -1,6 +1,6 @@
 <template>
   <div class="issueReporter">
-    <button data-testid="trigger" class="ir__trigger" @click="open = true">Report Issue</button>
+    <button data-testid="trigger" class="ir__trigger" @click="openModal">Report Issue</button>
 
     <div v-if="open" data-testid="modal" class="ir__overlay" @click.self="open = false">
       <div class="ir__modal">
@@ -88,6 +88,13 @@ const contextText = computed(() => {
   if (props.context) return typeof props.context === 'string' ? props.context : JSON.stringify(props.context)
   return window.location.href
 })
+
+function openModal() {
+  Object.assign(form, { title: '', type: 'bug', description: '' })
+  error.value = ''
+  issueUrl.value = ''
+  open.value = true
+}
 
 async function handleSubmit() {
   error.value = ''
