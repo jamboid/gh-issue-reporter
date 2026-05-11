@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { githubService } from '../src/githubService.js'
+import { githubService, postGitHubIssue } from '../src/githubService.js'
 
 const ISSUE_URL = 'https://github.com/jamboid/gh-issue-reporter/issues/1'
 
@@ -13,6 +13,37 @@ function mockSuccessFetch() {
 }
 
 afterEach(() => vi.restoreAllMocks())
+
+describe('postGitHubIssue', () => {
+  it('returns { url } on success', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ html_url: ISSUE_URL }),
+    }))
+    const result = await postGitHubIssue({ repo: 'jamboid/gh-issue-reporter', token: 'tok', title: 'T', body: 'B', labels: ['bug'] })
+    expect(result).toEqual({ url: ISSUE_URL })
+  })
+
+  it('throws Error with GitHub message on API failure', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 422,
+      json: () => Promise.resolve({ message: 'Validation failed' }),
+    }))
+    await expect(postGitHubIssue({ repo: 'jamboid/gh-issue-reporter', token: 'tok', title: 'T', body: 'B', labels: ['bug'] }))
+      .rejects.toThrow('Validation failed')
+  })
+
+  it('thrown error carries HTTP status', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ message: 'Bad credentials' }),
+    }))
+    await expect(postGitHubIssue({ repo: 'jamboid/gh-issue-reporter', token: 'bad', title: 'T', body: 'B', labels: ['bug'] }))
+      .rejects.toMatchObject({ status: 401 })
+  })
+})
 
 describe('githubService', () => {
   it('sends Authorization: Bearer header using construction-time token', async () => {
@@ -38,8 +69,12 @@ describe('githubService', () => {
     expect(result).toEqual({ url: ISSUE_URL })
   })
 
-  it('throws { status, message } on GitHub API error', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 422 }))
+  it('throws on GitHub API error', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 422,
+      json: () => Promise.resolve({ message: 'Validation failed' }),
+    }))
     const service = githubService({ repo: 'jamboid/gh-issue-reporter', token: 'tok' })
     await expect(service.createIssue({ title: 'T', body: 'B', label: 'bug' }))
       .rejects.toMatchObject({ status: 422 })
