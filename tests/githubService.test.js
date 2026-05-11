@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { githubService, postGitHubIssue } from '../src/githubService.js'
+import { githubService, postGitHubIssue, SubmissionError } from '../src/githubService.js'
 
 const ISSUE_URL = 'https://github.com/jamboid/gh-issue-reporter/issues/1'
 
@@ -13,6 +13,18 @@ function mockSuccessFetch() {
 }
 
 afterEach(() => vi.restoreAllMocks())
+
+describe('SubmissionError', () => {
+  it('is an instance of Error', () => {
+    expect(new SubmissionError(422, 'bad')).toBeInstanceOf(Error)
+  })
+
+  it('carries .status and .message', () => {
+    const err = new SubmissionError(422, 'Validation failed')
+    expect(err.status).toBe(422)
+    expect(err.message).toBe('Validation failed')
+  })
+})
 
 describe('postGitHubIssue', () => {
   it('returns { url } on success', async () => {

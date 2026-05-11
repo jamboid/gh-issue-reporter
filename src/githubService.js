@@ -1,3 +1,10 @@
+export class SubmissionError extends Error {
+  constructor(status, message) {
+    super(message)
+    this.status = status
+  }
+}
+
 export async function postGitHubIssue({ repo, token, title, body, labels }) {
   const res = await fetch(`https://api.github.com/repos/${repo}/issues`, {
     method: 'POST',
@@ -10,16 +17,12 @@ export async function postGitHubIssue({ repo, token, title, body, labels }) {
     body: JSON.stringify({ title, body, labels }),
   })
   const data = await res.json()
-  if (!res.ok) {
-    const err = new Error(data.message || `GitHub API error: ${res.status}`)
-    err.status = res.status
-    throw err
-  }
+  if (!res.ok) throw new SubmissionError(res.status, data.message || `GitHub API error: ${res.status}`)
   return { url: data.html_url }
 }
 
 export function githubService({ repo, token }) {
-  if (!token) throw { status: 503, message: 'token is required' }
+  if (!token) throw new SubmissionError(503, 'token is required')
   return {
     createIssue({ title, body, label }) {
       return postGitHubIssue({ repo, token, title, body, labels: [label] })
