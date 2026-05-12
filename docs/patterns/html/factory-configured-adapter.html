@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Factory-Configured Adapter — Pattern</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --surface-alt: #f4f4f2;
+    --border: #e5e4e0;
+    --border-strong: #d4d2cc;
+    --text: #1a1a18;
+    --text-muted: #5a5a55;
+    --text-faint: #8a8a82;
+    --accent: #3a5cff;
+    --accent-soft: #eaf0ff;
+    --good: #1f7a3a;
+    --good-soft: #e7f5ec;
+    --bad: #b1432a;
+    --bad-soft: #fbece5;
+    --cfg-bg: #fff5e1;
+    --cfg-border: #d4a142;
+    --fac-bg: #eaf0ff;
+    --fac-border: #3a5cff;
+    --clo-bg: #e7f5ec;
+    --clo-border: #1f7a3a;
+    --api-bg: #1e2030;
+    --api-border: #3a3f55;
+    --code-bg: #16181d;
+    --code-fg: #e5e5e0;
+    --code-comment: #7e8aa1;
+    --code-string: #c5d99d;
+    --code-keyword: #c697e6;
+    --code-fn: #8ec7ff;
+    --code-prop: #ffd28a;
+    --code-num: #f5a97f;
+    --radius: 10px;
+    --radius-lg: 14px;
+    --shadow-sm: 0 1px 2px rgba(20,20,18,.04);
+    --shadow-md: 0 4px 14px rgba(20,20,18,.06);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.6;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .page {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 48px;
+    padding: 48px 32px;
+  }
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 24px; padding: 24px 20px; }
+    .toc { position: static !important; }
+  }
+
+  .toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    font-size: 14px;
+  }
+  .toc-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-faint);
+    margin: 0 0 12px;
+  }
+  .toc ol { list-style: none; padding: 0; margin: 0; }
+  .toc li { margin: 2px 0; }
+  .toc a {
+    display: block;
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: var(--text-muted);
+    border-left: 2px solid transparent;
+  }
+  .toc a:hover { background: var(--surface-alt); text-decoration: none; color: var(--text); }
+  .toc a.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 500;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    padding: 4px 10px 4px 6px;
+    border-radius: 6px;
+    transition: color .15s, background .15s;
+  }
+  .back-link:hover { color: var(--accent); background: var(--accent-soft); text-decoration: none; }
+  .back-link .arrow { display: inline-block; transition: transform .15s; }
+  .back-link:hover .arrow { transform: translateX(-2px); }
+
+  .hero { margin-bottom: 48px; }
+  .eyebrow {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-size: 44px;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -.01em;
+    margin: 0 0 16px;
+  }
+  .lede {
+    font-size: 19px;
+    color: var(--text-muted);
+    margin: 0 0 24px;
+    max-width: 62ch;
+  }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .chip code { font-size: 12px; background: transparent; padding: 0; color: var(--text); }
+
+  section { margin-bottom: 56px; scroll-margin-top: 24px; }
+  h2 {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -.005em;
+    margin: 0 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 16px; font-weight: 600; margin: 24px 0 10px; }
+  p { margin: 0 0 16px; }
+  p code, li code, td code {
+    font-family: var(--mono);
+    font-size: .88em;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: var(--radius);
+    margin: 20px 0;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Flow diagram */
+  .flow-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px 20px 20px;
+    margin: 16px 0 24px;
+    box-shadow: var(--shadow-sm);
+    overflow-x: auto;
+  }
+  .flow-diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 18px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    border: 1.5px solid;
+    flex-shrink: 0;
+  }
+
+  /* Code blocks */
+  .code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    border-radius: var(--radius);
+    margin: 16px 0 24px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+  .code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #aab1c2;
+  }
+  .code-header .dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+    background: #4a5060;
+  }
+  .copy-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.1);
+    color: #aab1c2;
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .copy-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .copy-btn.copied { color: #8ec78e; border-color: #2f6b3a; }
+  pre {
+    margin: 0;
+    padding: 16px 20px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.65;
+  }
+  pre code { font-family: inherit; }
+
+  .tk-kw   { color: var(--code-keyword); }
+  .tk-fn   { color: var(--code-fn); }
+  .tk-str  { color: var(--code-string); }
+  .tk-cmt  { color: var(--code-comment); font-style: italic; }
+  .tk-prop { color: var(--code-prop); }
+  .tk-num  { color: var(--code-num); }
+
+  /* Code tabs */
+  .tabs { display: flex; gap: 2px; padding: 6px 10px; background: rgba(255,255,255,.03); border-bottom: 1px solid rgba(255,255,255,.06); flex-wrap: wrap; }
+  .tab-btn {
+    background: transparent;
+    color: #aab1c2;
+    border: 0;
+    padding: 6px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .tab-btn.active { background: rgba(58,92,255,.18); color: #e5e5e0; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Pros / cons */
+  .pc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .pc-grid { grid-template-columns: 1fr; } }
+  .pc-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 22px;
+    box-shadow: var(--shadow-sm);
+  }
+  .pc-card.pros { border-top: 3px solid var(--good); }
+  .pc-card.cons { border-top: 3px solid var(--bad); }
+  .pc-card h3 {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 0 12px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .pc-card.pros h3 { color: var(--good); }
+  .pc-card.cons h3 { color: var(--bad); }
+  .pc-card ul { margin: 0; padding-left: 0; list-style: none; }
+  .pc-card li {
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border);
+    font-size: 14.5px;
+    color: var(--text-muted);
+  }
+  .pc-card li:last-child { border-bottom: 0; }
+  .pc-card li strong { color: var(--text); }
+  .badge-icon {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    color: #fff;
+  }
+  .pros .badge-icon { background: var(--good); }
+  .cons .badge-icon { background: var(--bad); }
+
+  /* Files */
+  .files { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .files li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    align-items: start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    transition: border-color .15s, transform .15s;
+  }
+  .files li:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+  .files .file-path { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500; }
+  .files .file-desc { font-size: 14px; color: var(--text-muted); margin-top: 2px; }
+  .files .file-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: -.02em;
+  }
+  .file-icon.js  { background: var(--cfg-bg);  color: #966100; }
+  .file-icon.vue { background: var(--clo-bg);  color: var(--good); }
+  .file-icon.srv { background: var(--fac-bg);  color: var(--accent); }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-faint);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <aside class="toc">
+    <p class="toc-eyebrow">On this page</p>
+    <ol id="toc-list">
+      <li><a href="#problem">Problem statement</a></li>
+      <li><a href="#diagram">How it works</a></li>
+      <li><a href="#implementation">Implementation</a></li>
+      <li><a href="#advantages">Trade-offs</a></li>
+      <li><a href="#files">Key files</a></li>
+    </ol>
+  </aside>
+
+  <main>
+
+    <a class="back-link" href="index.html"><span class="arrow">←</span> All patterns</a>
+
+    <header class="hero">
+      <span class="eyebrow">Pattern</span>
+      <h1>Factory-Configured Adapter</h1>
+      <p class="lede">
+        Configure once at startup, submit many times — credentials are captured in a closure
+        and never reach the component tree or Vue DevTools.
+      </p>
+      <div class="meta">
+        <span class="chip">Layer&nbsp;·&nbsp;<code>src/adapters.js</code></span>
+        <span class="chip">Pattern&nbsp;·&nbsp;Factory / Closure</span>
+        <span class="chip">Consumer&nbsp;·&nbsp;<code>IssueReporter.vue</code></span>
+      </div>
+    </header>
+
+    <!-- Problem -->
+    <section id="problem">
+      <h2>Problem statement</h2>
+      <p>
+        An adapter needs two kinds of input: configuration that stays the same for every submission
+        (which repo to post to, which token to use), and data that changes per submission (the form
+        contents). Mixing these together creates problems.
+      </p>
+      <p>
+        If the component receives the token as a prop, it ends up in the Vue component tree —
+        visible in Vue DevTools, passable between components, and potentially logged. Credentials
+        don't belong in UI state.
+      </p>
+      <p>
+        If the adapter reads config from a global variable or environment directly, it becomes
+        impossible to test with different configurations and tightly coupled to a specific
+        deployment environment.
+      </p>
+      <p>
+        If config and form data are passed together in a single function call, the caller must
+        assemble and pass credentials on every submission — which either means storing them in
+        component state or re-fetching them each time.
+      </p>
+      <div class="callout">
+        <strong>Core insight:</strong> The factory pattern solves this by separating the two
+        concerns in time — configure once at startup, submit many times with no credentials
+        in sight.
+      </div>
+    </section>
+
+    <!-- Diagram -->
+    <section id="diagram">
+      <h2>How it works</h2>
+      <p>
+        A factory is a function that takes configuration and returns another function — the actual
+        adapter. Calling the factory "locks in" the config via a JavaScript closure; the returned
+        function only needs the form data at call time.
+      </p>
+
+      <div class="flow-diagram">
+        <svg viewBox="0 0 820 310" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Factory adapter data-flow diagram">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#5a5a55"/>
+            </marker>
+            <marker id="arr-blue" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#3a5cff"/>
+            </marker>
+            <style>
+              .d-title { font-family: ui-sans-serif,system-ui,sans-serif; font-size:14px; fill:#1a1a18; font-weight:700; }
+              .d-sub   { font-family: ui-monospace,Menlo,monospace; font-size:11px; fill:#5a5a55; }
+              .d-grp   { font-family: ui-sans-serif,system-ui,sans-serif; font-size:11px; text-transform:uppercase; letter-spacing:.09em; fill:#8a8a82; font-weight:600; }
+              .d-edge  { font-family: ui-sans-serif,system-ui,sans-serif; font-size:11px; fill:#8a8a82; font-style:italic; }
+              .d-api   { font-family: ui-sans-serif,system-ui,sans-serif; font-size:14px; fill:#e5e5e0; font-weight:700; }
+              .d-apisub{ font-family: ui-monospace,Menlo,monospace; font-size:11px; fill:#aab1c2; }
+              .d-note  { font-family: ui-sans-serif,system-ui,sans-serif; font-size:11.5px; fill:#5a5a55; }
+              .ln      { stroke:#5a5a55; stroke-width:1.5; fill:none; marker-end:url(#arr); }
+              .ln-x    { stroke:#3a5cff; stroke-width:1.5; fill:none; stroke-dasharray:5 3; marker-end:url(#arr-blue); }
+              .ln-d    { stroke:#5a5a55; stroke-width:1.3; fill:none; stroke-dasharray:4 3; marker-end:url(#arr); }
+            </style>
+          </defs>
+
+          <!-- Background panels -->
+          <rect x="10"  y="44" width="390" height="155" rx="12"
+                fill="#fffdf5" stroke="#d4a142" stroke-width="1" stroke-dasharray="6 4"/>
+          <rect x="412" y="44" width="398" height="155" rx="12"
+                fill="#f5fef7" stroke="#1f7a3a" stroke-width="1" stroke-dasharray="6 4"/>
+
+          <!-- Panel labels -->
+          <text class="d-grp" x="205" y="30" text-anchor="middle">Startup time — called once</text>
+          <text class="d-grp" x="611" y="30" text-anchor="middle">Call time — called per submission</text>
+
+          <!-- Config box (amber) -->
+          <rect x="26"  y="66" width="158" height="118" rx="8"
+                fill="#fff5e1" stroke="#d4a142" stroke-width="1.5"/>
+          <text class="d-title" x="105" y="92"  text-anchor="middle">Config</text>
+          <text class="d-sub"   x="105" y="111" text-anchor="middle">repo: &#39;owner/repo&#39;</text>
+          <text class="d-sub"   x="105" y="127" text-anchor="middle">token: ···</text>
+          <text class="d-sub"   x="105" y="146" text-anchor="middle">stable across all</text>
+          <text class="d-sub"   x="105" y="160" text-anchor="middle">submissions</text>
+
+          <!-- Arrow: Config → Factory -->
+          <path class="ln" d="M184,125 L218,125"/>
+          <text class="d-edge" x="201" y="117" text-anchor="middle">passes</text>
+
+          <!-- Factory box (blue) -->
+          <rect x="218" y="66" width="172" height="118" rx="8"
+                fill="#eaf0ff" stroke="#3a5cff" stroke-width="1.5"/>
+          <text class="d-title" x="304" y="92"  text-anchor="middle">Factory function</text>
+          <text class="d-sub"   x="304" y="111" text-anchor="middle">createDirectAdapter()</text>
+          <text class="d-sub"   x="304" y="127" text-anchor="middle">createProxyAdapter()</text>
+          <text class="d-sub"   x="304" y="146" text-anchor="middle">githubService()</text>
+          <text class="d-sub"   x="304" y="162" text-anchor="middle">captures config in closure</text>
+
+          <!-- Arrow: Factory → (crosses boundary) → Adapter fn -->
+          <path class="ln-x" d="M390,125 L428,125"/>
+          <text class="d-edge" x="409" y="117" text-anchor="middle">returns</text>
+
+          <!-- Adapter fn box (green) -->
+          <rect x="428" y="66" width="188" height="118" rx="8"
+                fill="#e7f5ec" stroke="#1f7a3a" stroke-width="1.5"/>
+          <text class="d-title" x="522" y="92"  text-anchor="middle">Adapter function</text>
+          <text class="d-sub"   x="522" y="111" text-anchor="middle">submit({ title, description,</text>
+          <text class="d-sub"   x="522" y="127" text-anchor="middle">         type, context })</text>
+          <text class="d-sub"   x="522" y="146" text-anchor="middle">repo, token sealed</text>
+          <text class="d-sub"   x="522" y="162" text-anchor="middle">inside the closure</text>
+
+          <!-- Arrow: Adapter fn → GitHub API -->
+          <path class="ln" d="M616,125 L650,125"/>
+          <text class="d-edge" x="633" y="117" text-anchor="middle">calls</text>
+
+          <!-- GitHub API box (dark) -->
+          <rect x="650" y="66" width="152" height="118" rx="8"
+                fill="#1e2030" stroke="#3a3f55" stroke-width="1.5"/>
+          <text class="d-api"    x="726" y="120" text-anchor="middle">GitHub API</text>
+          <text class="d-apisub" x="726" y="140" text-anchor="middle">POST /repos/:repo</text>
+          <text class="d-apisub" x="726" y="156" text-anchor="middle">/issues</text>
+
+          <!-- Form data: dashed arrow from below into adapter fn box -->
+          <path class="ln-d" d="M522,270 L522,187"/>
+          <text class="d-edge" x="522" y="288" text-anchor="middle">{ title, description, type, context }</text>
+          <text class="d-edge" x="522" y="305" text-anchor="middle">form data passed fresh on every call</text>
+
+          <!-- IssueReporter note below adapter fn -->
+          <text class="d-note" x="522" y="240" text-anchor="middle">← IssueReporter receives :submit as a plain function prop</text>
+        </svg>
+
+        <div class="legend">
+          <span><i style="background:var(--cfg-bg); border-color:var(--cfg-border)"></i> Configuration (captured once)</span>
+          <span><i style="background:var(--fac-bg); border-color:var(--fac-border)"></i> Factory function</span>
+          <span><i style="background:var(--clo-bg); border-color:var(--clo-border)"></i> Adapter closure</span>
+          <span><i style="background:var(--api-bg); border-color:var(--api-border)"></i> GitHub API</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Implementation -->
+    <section id="implementation">
+      <h2>Implementation in this codebase</h2>
+      <p>
+        Both adapters in the package are factories. The factory is called once when the app
+        starts — typically in the same file where the component is mounted. From that point on,
+        <code>token</code> is held inside the closure and never appears again. The component
+        receives <code>submit</code> — a plain function — with no knowledge of what's inside it.
+      </p>
+
+      <div class="code">
+        <div class="tabs" role="tablist">
+          <button class="tab-btn active" data-tab="t-direct">createDirectAdapter</button>
+          <button class="tab-btn" data-tab="t-proxy">createProxyAdapter</button>
+          <button class="tab-btn" data-tab="t-wiring">Host app wiring</button>
+          <button class="tab-btn" data-tab="t-service">githubService</button>
+        </div>
+
+        <!-- createDirectAdapter -->
+        <div class="tab-panel active" id="t-direct">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;src/adapters.js</span>
+            <button class="copy-btn" data-copy-target="code-direct">Copy</button>
+          </div>
+<pre id="code-direct"><code><span class="tk-kw">export function</span> <span class="tk-fn">createDirectAdapter</span>({ <span class="tk-prop">repo</span>, <span class="tk-prop">token</span> }) {
+  <span class="tk-cmt">// Config is captured here, at construction time.</span>
+  <span class="tk-kw">return</span> ({ <span class="tk-prop">title</span>, <span class="tk-prop">description</span>, <span class="tk-prop">type</span>, <span class="tk-prop">context</span> }) =&gt; {
+    <span class="tk-cmt">// The returned function only takes form data.</span>
+    <span class="tk-kw">return</span> <span class="tk-fn">postGitHubIssue</span>({
+      <span class="tk-prop">repo</span>, <span class="tk-prop">token</span>, <span class="tk-prop">title</span>,
+      <span class="tk-prop">body</span>: <span class="tk-fn">formatIssueBody</span>({ <span class="tk-prop">description</span>, <span class="tk-prop">context</span> }),
+      <span class="tk-prop">labels</span>: [<span class="tk-prop">type</span>],
+    })
+  }
+}</code></pre>
+        </div>
+
+        <!-- createProxyAdapter -->
+        <div class="tab-panel" id="t-proxy">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;src/adapters.js</span>
+            <button class="copy-btn" data-copy-target="code-proxy">Copy</button>
+          </div>
+<pre id="code-proxy"><code><span class="tk-kw">export function</span> <span class="tk-fn">createProxyAdapter</span>({ <span class="tk-prop">url</span> = <span class="tk-str">'/api/github/issues'</span> } = {}) {
+  <span class="tk-kw">return async</span> ({ <span class="tk-prop">title</span>, <span class="tk-prop">description</span>, <span class="tk-prop">type</span>, <span class="tk-prop">context</span> }) =&gt; {
+    <span class="tk-cmt">// url is captured; only form data is passed per call</span>
+    <span class="tk-kw">const</span> res = <span class="tk-kw">await</span> <span class="tk-fn">fetch</span>(<span class="tk-prop">url</span>, {
+      <span class="tk-prop">method</span>: <span class="tk-str">'POST'</span>,
+      <span class="tk-prop">headers</span>: { <span class="tk-str">'Content-Type'</span>: <span class="tk-str">'application/json'</span> },
+      <span class="tk-prop">body</span>: JSON.<span class="tk-fn">stringify</span>({ <span class="tk-prop">title</span>, <span class="tk-prop">description</span>, <span class="tk-prop">type</span>, <span class="tk-prop">context</span> }),
+    })
+    <span class="tk-kw">if</span> (!res.ok) <span class="tk-kw">throw new</span> <span class="tk-fn">SubmissionError</span>(res.<span class="tk-prop">status</span>)
+    <span class="tk-kw">return</span> res.<span class="tk-fn">json</span>()
+  }
+}</code></pre>
+        </div>
+
+        <!-- Host app wiring -->
+        <div class="tab-panel" id="t-wiring">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;Host app (main.js + App.vue)</span>
+            <button class="copy-btn" data-copy-target="code-wiring">Copy</button>
+          </div>
+<pre id="code-wiring"><code><span class="tk-cmt">// main.js — factory called once at startup</span>
+<span class="tk-kw">const</span> <span class="tk-prop">token</span>  = import.meta.env.<span class="tk-prop">VITE_GITHUB_TOKEN</span>
+<span class="tk-kw">const</span> <span class="tk-prop">submit</span> = <span class="tk-fn">createDirectAdapter</span>({ <span class="tk-prop">repo</span>: <span class="tk-str">'owner/repo'</span>, <span class="tk-prop">token</span> })
+
+<span class="tk-cmt">// token is now sealed inside the closure — never passed again</span>
+
+<span class="tk-cmt">&lt;!-- App.vue — component receives submit as a plain function prop</span>
+<span class="tk-cmt">     It has no knowledge of repo or token. --&gt;</span>
+&lt;<span class="tk-fn">IssueReporter</span> :<span class="tk-prop">submit</span>=<span class="tk-str">"submit"</span> /&gt;</code></pre>
+        </div>
+
+        <!-- githubService -->
+        <div class="tab-panel" id="t-service">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;src/githubService.js</span>
+            <button class="copy-btn" data-copy-target="code-service">Copy</button>
+          </div>
+<pre id="code-service"><code><span class="tk-cmt">// Same factory pattern on the server side.</span>
+<span class="tk-kw">export function</span> <span class="tk-fn">githubService</span>({ <span class="tk-prop">repo</span>, <span class="tk-prop">token</span> }) {
+  <span class="tk-kw">if</span> (!<span class="tk-prop">token</span>) <span class="tk-kw">throw new</span> <span class="tk-fn">SubmissionError</span>(<span class="tk-num">503</span>, <span class="tk-str">'token is required'</span>)
+  <span class="tk-kw">return</span> {
+    <span class="tk-fn">createIssue</span>({ <span class="tk-prop">title</span>, <span class="tk-prop">body</span>, <span class="tk-prop">label</span> }) {
+      <span class="tk-kw">return</span> <span class="tk-fn">postGitHubIssue</span>({ <span class="tk-prop">repo</span>, <span class="tk-prop">token</span>, <span class="tk-prop">title</span>, <span class="tk-prop">body</span>, <span class="tk-prop">labels</span>: [<span class="tk-prop">label</span>] })
+    },
+  }
+}
+
+<span class="tk-cmt">// Called once at server startup:</span>
+<span class="tk-kw">const</span> gh = <span class="tk-fn">githubService</span>({ <span class="tk-prop">repo</span>: process.env.<span class="tk-prop">GITHUB_REPO</span>, <span class="tk-prop">token</span>: process.env.<span class="tk-prop">GITHUB_TOKEN</span> })
+
+<span class="tk-cmt">// Each request only passes the issue fields — credentials stay in the closure:</span>
+gh.<span class="tk-fn">createIssue</span>({ <span class="tk-prop">title</span>, <span class="tk-prop">body</span>, <span class="tk-prop">label</span> })</code></pre>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Early validation:</strong> <code>githubService</code> throws immediately if
+        <code>token</code> is missing — at server startup, not buried inside the first request.
+        The proxy adapter follows the same shape but captures a <code>url</code> instead of
+        credentials, so no secret ever leaves the server.
+      </div>
+    </section>
+
+    <!-- Trade-offs -->
+    <section id="advantages">
+      <h2>Trade-offs</h2>
+      <div class="pc-grid">
+        <div class="pc-card pros">
+          <h3><span class="badge-icon">+</span> Advantages</h3>
+          <ul>
+            <li><strong>Credentials never reach the component.</strong> The token is captured in the closure at startup — invisible to Vue's reactivity system, DevTools, and prop drilling.</li>
+            <li><strong>Configuration validated early.</strong> <code>githubService</code> throws immediately if <code>token</code> is missing, at construction time rather than on the first user action.</li>
+            <li><strong>Tests configure adapters independently.</strong> Each test can call the factory with its own <code>repo</code> and <code>token</code> without any shared state between tests.</li>
+            <li><strong>Minimal call-site interface.</strong> Callers only pass what changes — the form data. Everything stable is already baked in.</li>
+          </ul>
+        </div>
+
+        <div class="pc-card cons">
+          <h3><span class="badge-icon">−</span> Disadvantages</h3>
+          <ul>
+            <li><strong>Construction errors, not call errors.</strong> If the factory is called with bad config (wrong repo name, malformed token), the error appears when the adapter is created — which can be confusing if construction happens far from usage.</li>
+            <li><strong>Dynamic reconfiguration needs a new factory call.</strong> If <code>repo</code> or <code>token</code> must change at runtime, you can't mutate the existing adapter — you create a new one. For most use cases this is fine.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key files -->
+    <section id="files">
+      <h2>Key files</h2>
+      <ul class="files">
+        <li>
+          <span class="file-icon js">JS</span>
+          <div>
+            <div class="file-path">src/adapters.js</div>
+            <div class="file-desc"><code>createDirectAdapter</code> and <code>createProxyAdapter</code> — both factory functions that close over configuration. The direct adapter captures <code>repo</code> and <code>token</code>; the proxy adapter captures <code>url</code>.</div>
+          </div>
+        </li>
+        <li>
+          <span class="file-icon srv">JS</span>
+          <div>
+            <div class="file-path">src/githubService.js</div>
+            <div class="file-desc"><code>githubService</code> follows the same factory pattern on the server side — <code>repo</code> and <code>token</code> captured at construction, <code>createIssue</code> only takes the issue fields. Throws early if <code>token</code> is absent.</div>
+          </div>
+        </li>
+        <li>
+          <span class="file-icon vue">VUE</span>
+          <div>
+            <div class="file-path">src/IssueReporter.vue</div>
+            <div class="file-desc">Receives the pre-configured adapter as the <code>submit</code> prop — a plain function with no knowledge of what's inside it. Calls it with form data only.</div>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <footer>
+      <span>gh-issue-reporter · patterns</span>
+      <span>Factory-Configured Adapter</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const target = document.getElementById(btn.dataset.copyTarget);
+      if (!target) return;
+      try {
+        await navigator.clipboard.writeText(target.innerText);
+        const orig = btn.textContent;
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1400);
+      } catch { btn.textContent = 'Press ⌘C'; }
+    });
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      const container = btn.closest('.code');
+      container.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      container.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === tab));
+    });
+  });
+
+  const tocLinks = Array.from(document.querySelectorAll('.toc a'));
+  const sections = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+
+  const setActive = id => tocLinks.forEach(a =>
+    a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+
+  const observer = new IntersectionObserver(entries => {
+    const visible = entries.filter(e => e.isIntersecting)
+      .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+    if (visible[0]) setActive(visible[0].target.id);
+  }, { rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.25, 0.5, 1] });
+
+  sections.forEach(s => observer.observe(s));
+
+  tocLinks.forEach(a => {
+    a.addEventListener('click', e => {
+      const id = a.getAttribute('href').slice(1);
+      const el = document.getElementById(id);
+      if (!el) return;
+      e.preventDefault();
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.replaceState(null, '', '#' + id);
+    });
+  });
+</script>
+
+</body>
+</html>

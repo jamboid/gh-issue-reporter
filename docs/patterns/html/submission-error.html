@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Typed Error with HTTP Status (SubmissionError) — Pattern</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --surface-alt: #f4f4f2;
+    --border: #e5e4e0;
+    --border-strong: #d4d2cc;
+    --text: #1a1a18;
+    --text-muted: #5a5a55;
+    --text-faint: #8a8a82;
+    --accent: #b1432a;
+    --accent-soft: #fbece5;
+    --good: #1f7a3a;
+    --good-soft: #e7f5ec;
+    --bad: #b1432a;
+    --bad-soft: #fbece5;
+    --cfg-bg: #fff5e1;
+    --cfg-border: #d4a142;
+    --fac-bg: #eaf0ff;
+    --fac-border: #3a5cff;
+    --clo-bg: #e7f5ec;
+    --clo-border: #1f7a3a;
+    --err-bg: #fbece5;
+    --err-border: #b1432a;
+    --api-bg: #1e2030;
+    --api-border: #3a3f55;
+    --code-bg: #16181d;
+    --code-fg: #e5e5e0;
+    --code-comment: #7e8aa1;
+    --code-string: #c5d99d;
+    --code-keyword: #c697e6;
+    --code-fn: #8ec7ff;
+    --code-prop: #ffd28a;
+    --code-num: #f5a97f;
+    --radius: 10px;
+    --radius-lg: 14px;
+    --shadow-sm: 0 1px 2px rgba(20,20,18,.04);
+    --shadow-md: 0 4px 14px rgba(20,20,18,.06);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: var(--sans); color: var(--text); background: var(--bg); line-height: 1.6; font-size: 16px; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .page { display: grid; grid-template-columns: 260px minmax(0, 1fr); max-width: 1200px; margin: 0 auto; gap: 48px; padding: 48px 32px; }
+  @media (max-width: 900px) { .page { grid-template-columns: 1fr; gap: 24px; padding: 24px 20px; } .toc { position: static !important; } }
+
+  .toc { position: sticky; top: 32px; align-self: start; font-size: 14px; }
+  .toc-eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: 11px; font-weight: 600; color: var(--text-faint); margin: 0 0 12px; }
+  .toc ol { list-style: none; padding: 0; margin: 0; }
+  .toc li { margin: 2px 0; }
+  .toc a { display: block; padding: 6px 10px; border-radius: 6px; color: var(--text-muted); border-left: 2px solid transparent; }
+  .toc a:hover { background: var(--surface-alt); text-decoration: none; color: var(--text); }
+  .toc a.active { background: var(--accent-soft); color: var(--accent); border-left-color: var(--accent); font-weight: 500; }
+
+  .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 20px; padding: 4px 10px 4px 6px; border-radius: 6px; transition: color .15s, background .15s; }
+  .back-link:hover { color: var(--accent); background: var(--accent-soft); text-decoration: none; }
+  .back-link .arrow { display: inline-block; transition: transform .15s; }
+  .back-link:hover .arrow { transform: translateX(-2px); }
+
+  .hero { margin-bottom: 48px; }
+  .eyebrow { display: inline-block; font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); padding: 4px 10px; border-radius: 999px; margin-bottom: 16px; }
+  h1 { font-family: var(--serif); font-size: 44px; font-weight: 600; line-height: 1.15; letter-spacing: -.01em; margin: 0 0 16px; }
+  .lede { font-size: 19px; color: var(--text-muted); margin: 0 0 24px; max-width: 62ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; color: var(--text-muted); font-weight: 500; }
+  .chip code { font-size: 12px; background: transparent; padding: 0; color: var(--text); }
+
+  section { margin-bottom: 56px; scroll-margin-top: 24px; }
+  h2 { font-family: var(--serif); font-size: 28px; font-weight: 600; letter-spacing: -.005em; margin: 0 0 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 16px; font-weight: 600; margin: 24px 0 10px; }
+  p { margin: 0 0 16px; }
+  p code, li code, td code { font-family: var(--mono); font-size: .88em; background: var(--surface-alt); border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px; }
+
+  .callout { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); padding: 16px 20px; border-radius: var(--radius); margin: 20px 0; box-shadow: var(--shadow-sm); }
+
+  .flow-diagram { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px 20px 20px; margin: 16px 0 24px; box-shadow: var(--shadow-sm); overflow-x: auto; }
+  .flow-diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-top: 18px; font-size: 13px; color: var(--text-muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1.5px solid; flex-shrink: 0; }
+
+  .code { background: var(--code-bg); color: var(--code-fg); border-radius: var(--radius); margin: 16px 0 24px; overflow: hidden; box-shadow: var(--shadow-md); }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: rgba(255,255,255,.04); border-bottom: 1px solid rgba(255,255,255,.06); font-family: var(--mono); font-size: 12px; color: #aab1c2; }
+  .code-header .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; background: #4a5060; }
+  .copy-btn { background: transparent; border: 1px solid rgba(255,255,255,.1); color: #aab1c2; font-size: 11px; font-family: var(--mono); padding: 4px 10px; border-radius: 6px; cursor: pointer; transition: background .15s, color .15s; }
+  .copy-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .copy-btn.copied { color: #8ec78e; border-color: #2f6b3a; }
+  pre { margin: 0; padding: 16px 20px; overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.65; }
+  pre code { font-family: inherit; }
+
+  .tk-kw   { color: var(--code-keyword); }
+  .tk-fn   { color: var(--code-fn); }
+  .tk-str  { color: var(--code-string); }
+  .tk-cmt  { color: var(--code-comment); font-style: italic; }
+  .tk-prop { color: var(--code-prop); }
+  .tk-num  { color: var(--code-num); }
+
+  .tabs { display: flex; gap: 2px; padding: 6px 10px; background: rgba(255,255,255,.03); border-bottom: 1px solid rgba(255,255,255,.06); flex-wrap: wrap; }
+  .tab-btn { background: transparent; color: #aab1c2; border: 0; padding: 6px 12px; font-family: var(--mono); font-size: 12px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+  .tab-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .tab-btn.active { background: rgba(177,67,42,.25); color: #e5e5e0; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .pc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .pc-grid { grid-template-columns: 1fr; } }
+  .pc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 22px; box-shadow: var(--shadow-sm); }
+  .pc-card.pros { border-top: 3px solid var(--good); }
+  .pc-card.cons { border-top: 3px solid var(--bad); }
+  .pc-card h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
+  .pc-card.pros h3 { color: var(--good); }
+  .pc-card.cons h3 { color: var(--bad); }
+  .pc-card ul { margin: 0; padding-left: 0; list-style: none; }
+  .pc-card li { padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 14.5px; color: var(--text-muted); }
+  .pc-card li:last-child { border-bottom: 0; }
+  .pc-card li strong { color: var(--text); }
+  .badge-icon { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
+  .pros .badge-icon { background: var(--good); }
+  .cons .badge-icon { background: var(--bad); }
+
+  .files { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .files li { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; transition: border-color .15s, transform .15s; }
+  .files li:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+  .files .file-path { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500; }
+  .files .file-desc { font-size: 14px; color: var(--text-muted); margin-top: 2px; }
+  .files .file-icon { width: 36px; height: 36px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: -.02em; }
+  .file-icon.js  { background: var(--cfg-bg);  color: #966100; }
+  .file-icon.vue { background: var(--clo-bg);  color: var(--good); }
+  .file-icon.srv { background: var(--fac-bg);  color: #3a5cff; }
+  .file-icon.tst { background: #f0f4ff; color: #3a5cff; }
+
+  footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-faint); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <aside class="toc">
+    <p class="toc-eyebrow">On this page</p>
+    <ol id="toc-list">
+      <li><a href="#problem">Problem statement</a></li>
+      <li><a href="#diagram">How it works</a></li>
+      <li><a href="#implementation">Implementation</a></li>
+      <li><a href="#advantages">Trade-offs</a></li>
+      <li><a href="#files">Key files</a></li>
+    </ol>
+  </aside>
+
+  <main>
+
+    <a class="back-link" href="index.html"><span class="arrow">←</span> All patterns</a>
+
+    <header class="hero">
+      <span class="eyebrow">Pattern</span>
+      <h1>SubmissionError</h1>
+      <p class="lede">
+        A typed Error subclass that carries both an HTTP status code and a human-readable
+        message — giving the Express router and the Vue component exactly what they each
+        need from a single thrown object.
+      </p>
+      <div class="meta">
+        <span class="chip">Layer&nbsp;·&nbsp;<code>src/githubService.js</code></span>
+        <span class="chip">Pattern&nbsp;·&nbsp;Typed Error / Error Subclass</span>
+        <span class="chip">Consumers&nbsp;·&nbsp;githubRouter + IssueReporter</span>
+      </div>
+    </header>
+
+    <!-- Problem -->
+    <section id="problem">
+      <h2>Problem statement</h2>
+      <p>
+        When something goes wrong during issue submission, two different parts of the system
+        need information about that failure: the Express router needs an HTTP status code to
+        forward to the client, and the Vue component needs a human-readable message to display
+        inline.
+      </p>
+      <p>
+        Without a consistent error shape, each throw site makes its own decision. One might
+        throw a plain object <code>&#123; status: 422, message: '...' &#125;</code>. Another
+        might throw a standard <code>Error</code> with <code>.message</code> but no
+        <code>.status</code>. A third might throw a string. The router then has to guess:
+        <code>res.status(e.status || 500)</code> — the <code>|| 500</code> is a silent
+        fallback for "I don't know what this is."
+      </p>
+      <p>
+        Plain object throws have a further problem: they aren't <code>Error</code> instances.
+        They have no stack trace, don't work correctly with <code>instanceof</code>, and
+        behave unexpectedly with some promise rejection handlers and logging tools that expect
+        real <code>Error</code> objects.
+      </p>
+      <div class="callout">
+        <strong>Core insight:</strong> One typed class — <code>SubmissionError extends Error</code>
+        — gives the failure a name, a consistent shape, and real <code>Error</code> semantics.
+        Every throw site in the GitHub API layer produces the same object. Callers don't
+        need to guess what they caught.
+      </div>
+    </section>
+
+    <!-- Diagram -->
+    <section id="diagram">
+      <h2>How it works</h2>
+      <p>
+        Two throw sites produce <code>SubmissionError</code>. Two catch sites consume it.
+        Each reads the property it cares about — the router reads <code>.status</code>, the
+        component reads <code>.message</code> — from the same object.
+      </p>
+
+      <div class="flow-diagram">
+        <svg viewBox="0 0 820 250" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="SubmissionError throw-and-catch diagram">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#5a5a55"/>
+            </marker>
+            <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#b1432a"/>
+            </marker>
+            <style>
+              .d-title { font-family: ui-sans-serif,system-ui,sans-serif; font-size:13px; fill:#1a1a18; font-weight:700; }
+              .d-sub   { font-family: ui-monospace,Menlo,monospace; font-size:10.5px; fill:#5a5a55; }
+              .d-grp   { font-family: ui-sans-serif,system-ui,sans-serif; font-size:11px; text-transform:uppercase; letter-spacing:.09em; fill:#8a8a82; font-weight:600; }
+              .d-edge  { font-family: ui-sans-serif,system-ui,sans-serif; font-size:11px; fill:#8a8a82; font-style:italic; }
+              .d-err   { font-family: ui-sans-serif,system-ui,sans-serif; font-size:13px; fill:#b1432a; font-weight:700; }
+              .d-prop  { font-family: ui-monospace,Menlo,monospace; font-size:11px; fill:#b1432a; }
+              .ln-r    { stroke:#b1432a; stroke-width:1.8; fill:none; marker-end:url(#arr-red); }
+              .ln      { stroke:#5a5a55; stroke-width:1.4; fill:none; marker-end:url(#arr); }
+            </style>
+          </defs>
+
+          <!-- Left: throw sites -->
+          <text class="d-grp" x="130" y="18" text-anchor="middle">Throw sites</text>
+
+          <!-- postGitHubIssue box -->
+          <rect x="18" y="30" width="222" height="70" rx="7" fill="#fff5e1" stroke="#d4a142" stroke-width="1.5"/>
+          <text class="d-title" x="129" y="56"  text-anchor="middle">postGitHubIssue</text>
+          <text class="d-sub"   x="129" y="74"  text-anchor="middle">throw new SubmissionError(</text>
+          <text class="d-sub"   x="129" y="89"  text-anchor="middle">  res.status, data.message)</text>
+
+          <!-- githubService constructor box -->
+          <rect x="18" y="150" width="222" height="70" rx="7" fill="#fff5e1" stroke="#d4a142" stroke-width="1.5"/>
+          <text class="d-title" x="129" y="176" text-anchor="middle">githubService()</text>
+          <text class="d-sub"   x="129" y="194" text-anchor="middle">throw new SubmissionError(</text>
+          <text class="d-sub"   x="129" y="209" text-anchor="middle">  503, 'token is required')</text>
+
+          <!-- Center: SubmissionError class -->
+          <rect x="290" y="50" width="240" height="150" rx="10"
+                fill="#fbece5" stroke="#b1432a" stroke-width="2"/>
+          <text class="d-err"  x="410" y="80"  text-anchor="middle">SubmissionError</text>
+          <text class="d-sub"  x="410" y="100" text-anchor="middle">extends Error</text>
+          <line x1="310" y1="110" x2="510" y2="110" stroke="#e5a08a" stroke-width="1"/>
+          <text class="d-prop" x="410" y="130" text-anchor="middle">.status — HTTP code</text>
+          <text class="d-prop" x="410" y="150" text-anchor="middle">.message — human text</text>
+          <text class="d-prop" x="410" y="170" text-anchor="middle">.stack — full stack trace</text>
+          <text class="d-sub"  x="410" y="190" text-anchor="middle">instanceof Error ✓</text>
+
+          <!-- Arrows: throw sites → center -->
+          <path class="ln-r" d="M240,65  L287,110"/>
+          <path class="ln-r" d="M240,185 L287,150"/>
+          <text class="d-edge" x="262" y="88"  text-anchor="middle">throw</text>
+          <text class="d-edge" x="262" y="175" text-anchor="middle">throw</text>
+
+          <!-- Right: catch sites -->
+          <text class="d-grp" x="680" y="18" text-anchor="middle">Catch sites</text>
+
+          <!-- githubRouter box -->
+          <rect x="580" y="30" width="222" height="80" rx="7" fill="#eaf0ff" stroke="#3a5cff" stroke-width="1.5"/>
+          <text class="d-title" x="691" y="56"  text-anchor="middle">githubRouter</text>
+          <text class="d-sub"   x="691" y="74"  text-anchor="middle">res.status(e.status || 500)</text>
+          <text class="d-sub"   x="691" y="90"  text-anchor="middle">.json({ error: e.message })</text>
+          <text class="d-sub"   x="691" y="104" text-anchor="middle" fill="#3a5cff">reads .status</text>
+
+          <!-- IssueReporter.vue box -->
+          <rect x="580" y="148" width="222" height="72" rx="7" fill="#e7f5ec" stroke="#1f7a3a" stroke-width="1.5"/>
+          <text class="d-title" x="691" y="174" text-anchor="middle">IssueReporter.vue</text>
+          <text class="d-sub"   x="691" y="192" text-anchor="middle">error.value = e.message</text>
+          <text class="d-sub"   x="691" y="208" text-anchor="middle">shows inline error text</text>
+          <text class="d-sub"   x="691" y="222" text-anchor="middle" fill="#1f7a3a">reads .message</text>
+
+          <!-- Arrows: center → catch sites -->
+          <path class="ln-r" d="M530,100 L577,80"/>
+          <path class="ln-r" d="M530,140 L577,180"/>
+          <text class="d-edge" x="555" y="88"  text-anchor="middle">catch</text>
+          <text class="d-edge" x="555" y="165" text-anchor="middle">catch</text>
+        </svg>
+
+        <div class="legend">
+          <span><i style="background:#fbece5; border-color:#b1432a"></i> SubmissionError</span>
+          <span><i style="background:#fff5e1; border-color:#d4a142"></i> Throw sites (GitHub API layer)</span>
+          <span><i style="background:#eaf0ff; border-color:#3a5cff"></i> githubRouter (reads .status)</span>
+          <span><i style="background:#e7f5ec; border-color:#1f7a3a"></i> IssueReporter (reads .message)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Implementation -->
+    <section id="implementation">
+      <h2>Implementation in this codebase</h2>
+      <p>
+        <code>SubmissionError</code> extends the native <code>Error</code> class and adds a
+        <code>.status</code> property. Every throw site in the GitHub API layer uses it —
+        and callers get exactly what they need from the single caught object.
+      </p>
+
+      <div class="code">
+        <div class="tabs" role="tablist">
+          <button class="tab-btn active" data-tab="t-class">SubmissionError class</button>
+          <button class="tab-btn" data-tab="t-throw">postGitHubIssue throws</button>
+          <button class="tab-btn" data-tab="t-router">githubRouter catches</button>
+          <button class="tab-btn" data-tab="t-vue">IssueReporter catches</button>
+        </div>
+
+        <!-- SubmissionError class -->
+        <div class="tab-panel active" id="t-class">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;src/githubService.js</span>
+            <button class="copy-btn" data-copy-target="code-class">Copy</button>
+          </div>
+<pre id="code-class"><code><span class="tk-kw">export class</span> <span class="tk-fn">SubmissionError</span> <span class="tk-kw">extends</span> <span class="tk-fn">Error</span> {
+  <span class="tk-fn">constructor</span>(<span class="tk-prop">status</span>, <span class="tk-prop">message</span>) {
+    <span class="tk-kw">super</span>(<span class="tk-prop">message</span>)
+    <span class="tk-kw">this</span>.<span class="tk-prop">status</span> = <span class="tk-prop">status</span>
+  }
+}
+
+<span class="tk-cmt">// Real Error semantics: stack trace, instanceof, promise rejection handlers.</span>
+<span class="tk-cmt">// Callers get .status (for HTTP) and .message (for display) from one object.</span></code></pre>
+        </div>
+
+        <!-- postGitHubIssue throws -->
+        <div class="tab-panel" id="t-throw">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;src/githubService.js — throw sites</span>
+            <button class="copy-btn" data-copy-target="code-throw">Copy</button>
+          </div>
+<pre id="code-throw"><code><span class="tk-cmt">// When the GitHub API returns a non-2xx response:</span>
+<span class="tk-kw">if</span> (!res.<span class="tk-prop">ok</span>) <span class="tk-kw">throw new</span> <span class="tk-fn">SubmissionError</span>(
+  res.<span class="tk-prop">status</span>,
+  data.<span class="tk-prop">message</span> || <span class="tk-str">`GitHub API error: <span class="tk-prop">${res.status}</span>`</span>
+)
+
+<span class="tk-cmt">// When githubService is constructed without a token:</span>
+<span class="tk-kw">if</span> (!<span class="tk-prop">token</span>) <span class="tk-kw">throw new</span> <span class="tk-fn">SubmissionError</span>(<span class="tk-num">503</span>, <span class="tk-str">'token is required'</span>)
+
+<span class="tk-cmt">// Construction-time failure: loud, typed, carries a meaningful status code.
+// Not buried inside the first request — caught immediately at startup.</span></code></pre>
+        </div>
+
+        <!-- githubRouter catches -->
+        <div class="tab-panel" id="t-router">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;src/githubRouter.js — catch site</span>
+            <button class="copy-btn" data-copy-target="code-router">Copy</button>
+          </div>
+<pre id="code-router"><code>} <span class="tk-kw">catch</span> (e) {
+  <span class="tk-cmt">// .status is always present on SubmissionError.
+  // || 500 is a defensive fallback for unexpected throws from custom services.</span>
+  res.<span class="tk-fn">status</span>(e.<span class="tk-prop">status</span> || <span class="tk-num">500</span>).<span class="tk-fn">json</span>({ <span class="tk-prop">error</span>: e.<span class="tk-prop">message</span> })
+}</code></pre>
+        </div>
+
+        <!-- IssueReporter catches -->
+        <div class="tab-panel" id="t-vue">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;src/IssueReporter.vue — catch site</span>
+            <button class="copy-btn" data-copy-target="code-vue">Copy</button>
+          </div>
+<pre id="code-vue"><code>} <span class="tk-kw">catch</span> (e) {
+  <span class="tk-cmt">// .message is always present — it's an Error property.
+  // The component doesn't need .status; it only shows text to the user.</span>
+  error.<span class="tk-prop">value</span> = e.<span class="tk-prop">message</span>
+}</code></pre>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Both callers get what they need</strong> from the same thrown object.
+        The router reads <code>.status</code> to build the HTTP response. The component
+        reads <code>.message</code> to populate the inline error. Neither has to massage
+        the error into a different shape first.
+      </div>
+    </section>
+
+    <!-- Trade-offs -->
+    <section id="advantages">
+      <h2>Trade-offs</h2>
+      <div class="pc-grid">
+        <div class="pc-card pros">
+          <h3><span class="badge-icon">+</span> Advantages</h3>
+          <ul>
+            <li><strong>One error shape everywhere.</strong> Every throw in the GitHub API layer produces a <code>SubmissionError</code>. Callers don't need to check whether <code>.status</code> exists or whether the thrown value is an <code>Error</code> or a plain object.</li>
+            <li><strong>Full <code>Error</code> semantics.</strong> Stack traces, <code>instanceof</code> checks, and promise rejection handlers all work correctly. A logging tool that expects <code>Error</code> instances won't drop the error silently.</li>
+            <li><strong>Construction-time failures are explicit.</strong> <code>githubService</code> throws a <code>SubmissionError(503, ...)</code> immediately if the token is missing — not on the first user request.</li>
+            <li><strong>Tests can assert on both properties.</strong> <code>rejects.toMatchObject(&#123; status: 422 &#125;)</code> works because <code>toMatchObject</code> checks properties regardless of class. Stricter tests can use <code>instanceof SubmissionError</code>.</li>
+          </ul>
+        </div>
+
+        <div class="pc-card cons">
+          <h3><span class="badge-icon">−</span> Disadvantages</h3>
+          <ul>
+            <li><strong><code>SubmissionError</code> is not part of the public API.</strong> It's exported from <code>src/githubService.js</code> but not re-exported from either entry point. A custom adapter author who wants to throw the same type must import from an internal path.</li>
+            <li><strong>The router still duck-types <code>.status</code>.</strong> The <code>e.status || 500</code> pattern works for <code>SubmissionError</code> but also for any <code>Error</code> with <code>.status</code> attached. The router doesn't enforce that errors are <code>SubmissionError</code> instances.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key files -->
+    <section id="files">
+      <h2>Key files</h2>
+      <ul class="files">
+        <li>
+          <span class="file-icon js">JS</span>
+          <div>
+            <div class="file-path">src/githubService.js</div>
+            <div class="file-desc">Defines <code>SubmissionError</code>. Both <code>postGitHubIssue</code> (API errors) and <code>githubService</code> constructor (missing token) throw it. This is the only file that creates <code>SubmissionError</code> instances.</div>
+          </div>
+        </li>
+        <li>
+          <span class="file-icon srv">JS</span>
+          <div>
+            <div class="file-path">src/githubRouter.js</div>
+            <div class="file-desc">Reads <code>e.status</code> and <code>e.message</code> from caught errors to build the HTTP response. The <code>|| 500</code> fallback handles unexpected throws from custom services.</div>
+          </div>
+        </li>
+        <li>
+          <span class="file-icon vue">VUE</span>
+          <div>
+            <div class="file-path">src/IssueReporter.vue</div>
+            <div class="file-desc">Reads <code>e.message</code> from caught adapter errors to populate the inline error display. Doesn't need <code>.status</code> — only the human-readable text matters in the UI.</div>
+          </div>
+        </li>
+        <li>
+          <span class="file-icon tst">TST</span>
+          <div>
+            <div class="file-path">tests/githubService.test.js</div>
+            <div class="file-desc">Verifies that <code>SubmissionError</code> carries both <code>.status</code> and <code>.message</code>. Uses <code>rejects.toMatchObject(&#123; status: 422 &#125;)</code> to assert on the typed shape.</div>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <footer>
+      <span>gh-issue-reporter · patterns</span>
+      <span>SubmissionError</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const target = document.getElementById(btn.dataset.copyTarget);
+      if (!target) return;
+      try {
+        await navigator.clipboard.writeText(target.innerText);
+        const orig = btn.textContent;
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1400);
+      } catch { btn.textContent = 'Press ⌘C'; }
+    });
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      const container = btn.closest('.code');
+      container.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      container.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === tab));
+    });
+  });
+
+  const tocLinks = Array.from(document.querySelectorAll('.toc a'));
+  const sections = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const setActive = id => tocLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+  const observer = new IntersectionObserver(entries => {
+    const visible = entries.filter(e => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+    if (visible[0]) setActive(visible[0].target.id);
+  }, { rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.25, 0.5, 1] });
+  sections.forEach(s => observer.observe(s));
+  tocLinks.forEach(a => {
+    a.addEventListener('click', e => {
+      const id = a.getAttribute('href').slice(1);
+      const el = document.getElementById(id);
+      if (!el) return;
+      e.preventDefault();
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.replaceState(null, '', '#' + id);
+    });
+  });
+</script>
+
+</body>
+</html>

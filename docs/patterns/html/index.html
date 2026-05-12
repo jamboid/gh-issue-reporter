@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Patterns — gh-issue-reporter</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --surface-alt: #f4f4f2;
+    --border: #e5e4e0;
+    --border-strong: #d4d2cc;
+    --text: #1a1a18;
+    --text-muted: #5a5a55;
+    --text-faint: #8a8a82;
+    --accent: #3a5cff;
+    --accent-soft: #eaf0ff;
+    --good: #1f7a3a;
+    --good-soft: #e7f5ec;
+    --warn: #b27800;
+    --warn-soft: #fff5e1;
+    --purple: #7c3aed;
+    --purple-soft: #f3e8ff;
+    --orange: #c84a1f;
+    --orange-soft: #fbece5;
+    --red: #b1432a;
+    --red-soft: #fce8e5;
+    --radius: 10px;
+    --radius-lg: 14px;
+    --shadow-sm: 0 1px 2px rgba(20, 20, 18, 0.04);
+    --shadow-md: 0 4px 14px rgba(20, 20, 18, 0.06);
+    --shadow-lg: 0 10px 30px rgba(20, 20, 18, 0.08);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.6;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 64px 32px 80px;
+  }
+  @media (max-width: 700px) {
+    .page { padding: 40px 20px; }
+  }
+
+  /* Hero */
+  .hero { margin-bottom: 56px; }
+  .eyebrow {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 18px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-size: 52px;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    margin: 0 0 18px;
+  }
+  @media (max-width: 700px) { h1 { font-size: 38px; } }
+  .lede {
+    font-size: 20px;
+    color: var(--text-muted);
+    margin: 0 0 24px;
+    max-width: 64ch;
+  }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .chip code { font-size: 12px; background: transparent; padding: 0; color: var(--text); }
+
+  /* Intro block */
+  .intro {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px 28px;
+    margin-bottom: 56px;
+    box-shadow: var(--shadow-sm);
+  }
+  .intro p { margin: 0 0 12px; color: var(--text-muted); font-size: 16px; }
+  .intro p:last-child { margin: 0; }
+  .intro p code {
+    font-family: var(--mono);
+    font-size: 0.88em;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .intro strong { color: var(--text); }
+
+  /* Section heading */
+  h2 {
+    font-family: var(--serif);
+    font-size: 30px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    margin: 0 0 24px;
+  }
+  .section-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-faint);
+    margin: 0 0 6px;
+  }
+
+  /* Pattern cards */
+  .patterns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 800px) {
+    .patterns { grid-template-columns: 1fr; }
+  }
+
+  .pattern {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px 26px;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .pattern::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    transition: height 0.18s ease;
+  }
+  .pattern:hover {
+    text-decoration: none;
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border-strong);
+  }
+  .pattern:hover::before { height: 6px; }
+
+  /* Per-pattern accent colours */
+  .pattern.entry::before     { background: var(--accent); }
+  .pattern.factory::before   { background: var(--warn); }
+  .pattern.router::before    { background: var(--good); }
+  .pattern.primitive::before { background: var(--purple); }
+  .pattern.seam::before      { background: var(--orange); }
+  .pattern.error::before     { background: var(--red); }
+
+  .pattern-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+  .pattern-icon {
+    flex: 0 0 auto;
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pattern.entry     .pattern-icon { background: var(--accent-soft);  color: var(--accent); }
+  .pattern.factory   .pattern-icon { background: var(--warn-soft);    color: var(--warn); }
+  .pattern.router    .pattern-icon { background: var(--good-soft);    color: var(--good); }
+  .pattern.primitive .pattern-icon { background: var(--purple-soft);  color: var(--purple); }
+  .pattern.seam      .pattern-icon { background: var(--orange-soft);  color: var(--orange); }
+  .pattern.error     .pattern-icon { background: var(--red-soft);     color: var(--red); }
+
+  .pattern h3 {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    margin: 0;
+    line-height: 1.2;
+  }
+  .pattern .file {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-faint);
+    margin-top: 4px;
+  }
+  .pattern p {
+    margin: 0 0 16px;
+    color: var(--text-muted);
+    font-size: 14.5px;
+    flex: 1;
+  }
+  .pattern p code {
+    font-family: var(--mono);
+    font-size: 0.88em;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .pattern .read {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: auto;
+  }
+  .pattern .read .arrow { transition: transform 0.18s ease; }
+  .pattern:hover .read .arrow { transform: translateX(3px); }
+
+  .pattern.entry     .read { color: var(--accent); }
+  .pattern.factory   .read { color: var(--warn); }
+  .pattern.router    .read { color: var(--good); }
+  .pattern.primitive .read { color: var(--purple); }
+  .pattern.seam      .read { color: var(--orange); }
+  .pattern.error     .read { color: var(--red); }
+
+  .pattern .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .pattern .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--surface-alt);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  footer {
+    margin-top: 80px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-faint);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="hero">
+    <span class="eyebrow">gh-issue-reporter</span>
+    <h1>Patterns</h1>
+    <p class="lede">
+      Architectural patterns used across this package — each written up with the problem
+      it solves, how it's wired in this project, and the trade-offs that come with it.
+    </p>
+    <div class="meta">
+      <span class="chip">Vue 3 · Composition API</span>
+      <span class="chip">Express</span>
+      <span class="chip">Vitest</span>
+      <span class="chip">Dual-env package</span>
+    </div>
+  </header>
+
+  <div class="intro">
+    <p>
+      These six patterns together describe how <strong>gh-issue-reporter</strong> stays
+      <strong>testable</strong>, <strong>secure</strong>, and <strong>configurable</strong>
+      across two runtime environments. The entry points enforce a hard client/server boundary;
+      the adapter seam and factory pattern keep credentials out of components; the injected
+      service router makes the Express layer independently testable; the shared API primitive
+      gives GitHub calls one home; and <code>SubmissionError</code> gives failures a consistent
+      shape from the API layer through to the UI.
+    </p>
+    <p>
+      Each page describes the problem, shows the implementation in this codebase, and lists the
+      advantages and disadvantages so you can judge when — and when not — to reach for the pattern.
+    </p>
+  </div>
+
+  <p class="section-eyebrow">Index</p>
+  <h2>Patterns covered</h2>
+
+  <div class="patterns">
+
+    <!-- Dual Entry Points -->
+    <a class="pattern entry" href="dual-entry-points.html">
+      <div class="pattern-head">
+        <span class="pattern-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 4v7"/>
+            <path d="M6 21 L12 11 L18 21"/>
+            <circle cx="12" cy="4" r="1.5" fill="currentColor" stroke="none"/>
+          </svg>
+        </span>
+        <div>
+          <h3>Dual Entry Points</h3>
+          <div class="file">dual-entry-points.html</div>
+        </div>
+      </div>
+      <div class="tags">
+        <span class="tag">package.json</span>
+        <span class="tag">exports map</span>
+        <span class="tag">client + server</span>
+      </div>
+      <p>
+        The <code>exports</code> field in <code>package.json</code> defines two named entry
+        points: <code>"."</code> for browser code and <code>"./server"</code> for Node.js code.
+        Frontend bundlers cannot see Express; the server entry cannot see Vue. Each environment
+        gets exactly what it needs and nothing it doesn't.
+      </p>
+      <span class="read">Read pattern <span class="arrow">→</span></span>
+    </a>
+
+    <!-- Factory-Configured Adapter -->
+    <a class="pattern factory" href="factory-configured-adapter.html">
+      <div class="pattern-head">
+        <span class="pattern-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="11" width="14" height="10" rx="2"/>
+            <path d="M8 11V7a4 4 0 018 0v4"/>
+          </svg>
+        </span>
+        <div>
+          <h3>Factory-Configured Adapter</h3>
+          <div class="file">factory-configured-adapter.html</div>
+        </div>
+      </div>
+      <div class="tags">
+        <span class="tag">src/adapters.js</span>
+        <span class="tag">factory / closure</span>
+        <span class="tag">sealed credentials</span>
+      </div>
+      <p>
+        A factory takes configuration (<code>repo</code>, <code>token</code>) and returns the
+        adapter — sealing credentials in a closure at startup. The returned function takes only
+        form data. The component receives a plain function and never sees credentials, Vue
+        DevTools included.
+      </p>
+      <span class="read">Read pattern <span class="arrow">→</span></span>
+    </a>
+
+    <!-- Submission Adapter Seam -->
+    <a class="pattern seam" href="submission-adapter-seam.html">
+      <div class="pattern-head">
+        <span class="pattern-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="8" width="8" height="8" rx="2"/>
+            <rect x="14" y="8" width="8" height="8" rx="2"/>
+            <path d="M10 12h4" stroke-dasharray="2 2"/>
+          </svg>
+        </span>
+        <div>
+          <h3>Submission Adapter Seam</h3>
+          <div class="file">submission-adapter-seam.html</div>
+        </div>
+      </div>
+      <div class="tags">
+        <span class="tag">IssueReporter.vue</span>
+        <span class="tag">submit prop</span>
+        <span class="tag">swappable</span>
+      </div>
+      <p>
+        The component's <code>submit</code> prop is the seam — the point where submission
+        behaviour can be changed without touching the component. Two adapters ship with the
+        package; any async function satisfying <code>({ title, description, type, context })
+        =&gt; Promise&lt;{ url }&gt;</code> works in their place.
+      </p>
+      <span class="read">Read pattern <span class="arrow">→</span></span>
+    </a>
+
+    <!-- Injected Service Router -->
+    <a class="pattern router" href="injected-service-router.html">
+      <div class="pattern-head">
+        <span class="pattern-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="7" y="7" width="10" height="10" rx="2"/>
+            <path d="M2 12h5M17 12h5"/>
+            <path d="M15 10l2 2-2 2"/>
+          </svg>
+        </span>
+        <div>
+          <h3>Injected Service Router</h3>
+          <div class="file">injected-service-router.html</div>
+        </div>
+      </div>
+      <div class="tags">
+        <span class="tag">githubRouter.js</span>
+        <span class="tag">dependency injection</span>
+        <span class="tag">testable HTTP</span>
+      </div>
+      <p>
+        <code>githubRouter</code> is a factory that accepts a service object and returns an
+        Express <code>Router</code>. It never constructs the service itself. Tests pass a mock
+        object; production passes <code>githubService</code>. Every HTTP status code the router
+        can emit is testable without a network call.
+      </p>
+      <span class="read">Read pattern <span class="arrow">→</span></span>
+    </a>
+
+    <!-- Shared API Primitive -->
+    <a class="pattern primitive" href="shared-api-primitive.html">
+      <div class="pattern-head">
+        <span class="pattern-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3 L21 12 L12 21 L3 12 Z"/>
+            <path d="M7.5 12h9M12 7.5v9"/>
+          </svg>
+        </span>
+        <div>
+          <h3>Shared API Primitive</h3>
+          <div class="file">shared-api-primitive.html</div>
+        </div>
+      </div>
+      <div class="tags">
+        <span class="tag">githubService.js</span>
+        <span class="tag">single source of truth</span>
+        <span class="tag">no duplication</span>
+      </div>
+      <p>
+        <code>postGitHubIssue</code> is the single function that knows how to talk to the
+        GitHub Issues API — headers, serialisation, response parsing, and error shape. Both the
+        client-side adapter and the server-side service delegate to it; neither duplicates the
+        fetch logic.
+      </p>
+      <span class="read">Read pattern <span class="arrow">→</span></span>
+    </a>
+
+    <!-- SubmissionError -->
+    <a class="pattern error" href="submission-error.html">
+      <div class="pattern-head">
+        <span class="pattern-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 8v4"/>
+            <path d="M12 15.5v.5"/>
+          </svg>
+        </span>
+        <div>
+          <h3>Typed Error with HTTP Status</h3>
+          <div class="file">submission-error.html</div>
+        </div>
+      </div>
+      <div class="tags">
+        <span class="tag">SubmissionError</span>
+        <span class="tag">Error subclass</span>
+        <span class="tag">.status + .message</span>
+      </div>
+      <p>
+        <code>SubmissionError</code> extends the native <code>Error</code> class and adds a
+        <code>.status</code> property. Every throw site in the GitHub API layer uses it. The
+        router reads <code>.status</code> to set the HTTP response code; the component reads
+        <code>.message</code> to display inline.
+      </p>
+      <span class="read">Read pattern <span class="arrow">→</span></span>
+    </a>
+
+  </div>
+
+  <footer>
+    <span>gh-issue-reporter · docs/patterns</span>
+    <span>Index</span>
+  </footer>
+</div>
+
+</body>
+</html>

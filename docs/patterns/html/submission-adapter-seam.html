@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Submission Adapter Seam — Pattern</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --surface-alt: #f4f4f2;
+    --border: #e5e4e0;
+    --border-strong: #d4d2cc;
+    --text: #1a1a18;
+    --text-muted: #5a5a55;
+    --text-faint: #8a8a82;
+    --accent: #c2510b;
+    --accent-soft: #fff3eb;
+    --good: #1f7a3a;
+    --good-soft: #e7f5ec;
+    --bad: #b1432a;
+    --bad-soft: #fbece5;
+    --cfg-bg: #fff5e1;
+    --cfg-border: #d4a142;
+    --fac-bg: #eaf0ff;
+    --fac-border: #3a5cff;
+    --clo-bg: #e7f5ec;
+    --clo-border: #1f7a3a;
+    --api-bg: #1e2030;
+    --api-border: #3a3f55;
+    --seam-bg: #fff8f2;
+    --seam-border: #c2510b;
+    --code-bg: #16181d;
+    --code-fg: #e5e5e0;
+    --code-comment: #7e8aa1;
+    --code-string: #c5d99d;
+    --code-keyword: #c697e6;
+    --code-fn: #8ec7ff;
+    --code-prop: #ffd28a;
+    --code-num: #f5a97f;
+    --radius: 10px;
+    --radius-lg: 14px;
+    --shadow-sm: 0 1px 2px rgba(20,20,18,.04);
+    --shadow-md: 0 4px 14px rgba(20,20,18,.06);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.6;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .page {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 48px;
+    padding: 48px 32px;
+  }
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 24px; padding: 24px 20px; }
+    .toc { position: static !important; }
+  }
+
+  .toc { position: sticky; top: 32px; align-self: start; font-size: 14px; }
+  .toc-eyebrow {
+    text-transform: uppercase; letter-spacing: .08em; font-size: 11px;
+    font-weight: 600; color: var(--text-faint); margin: 0 0 12px;
+  }
+  .toc ol { list-style: none; padding: 0; margin: 0; }
+  .toc li { margin: 2px 0; }
+  .toc a {
+    display: block; padding: 6px 10px; border-radius: 6px;
+    color: var(--text-muted); border-left: 2px solid transparent;
+  }
+  .toc a:hover { background: var(--surface-alt); text-decoration: none; color: var(--text); }
+  .toc a.active {
+    background: var(--accent-soft); color: var(--accent);
+    border-left-color: var(--accent); font-weight: 500;
+  }
+
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 500; color: var(--text-muted);
+    margin-bottom: 20px; padding: 4px 10px 4px 6px; border-radius: 6px;
+    transition: color .15s, background .15s;
+  }
+  .back-link:hover { color: var(--accent); background: var(--accent-soft); text-decoration: none; }
+  .back-link .arrow { display: inline-block; transition: transform .15s; }
+  .back-link:hover .arrow { transform: translateX(-2px); }
+
+  .hero { margin-bottom: 48px; }
+  .eyebrow {
+    display: inline-block; font-size: 12px; font-weight: 600;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 4px 10px; border-radius: 999px; margin-bottom: 16px;
+  }
+  h1 {
+    font-family: var(--serif); font-size: 44px; font-weight: 600;
+    line-height: 1.15; letter-spacing: -.01em; margin: 0 0 16px;
+  }
+  .lede { font-size: 19px; color: var(--text-muted); margin: 0 0 24px; max-width: 62ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 999px; color: var(--text-muted); font-weight: 500;
+  }
+  .chip code { font-size: 12px; background: transparent; padding: 0; color: var(--text); }
+
+  section { margin-bottom: 56px; scroll-margin-top: 24px; }
+  h2 {
+    font-family: var(--serif); font-size: 28px; font-weight: 600;
+    letter-spacing: -.005em; margin: 0 0 20px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 16px; font-weight: 600; margin: 24px 0 10px; }
+  p { margin: 0 0 16px; }
+  p code, li code, td code {
+    font-family: var(--mono); font-size: .88em;
+    background: var(--surface-alt); border: 1px solid var(--border);
+    padding: 1px 6px; border-radius: 4px;
+  }
+
+  .callout {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px; border-radius: var(--radius);
+    margin: 20px 0; box-shadow: var(--shadow-sm);
+  }
+
+  .flow-diagram {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 28px 20px 20px;
+    margin: 16px 0 24px; box-shadow: var(--shadow-sm); overflow-x: auto;
+  }
+  .flow-diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 16px; justify-content: center;
+    margin-top: 18px; font-size: 13px; color: var(--text-muted);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i {
+    display: inline-block; width: 14px; height: 14px;
+    border-radius: 3px; border: 1.5px solid; flex-shrink: 0;
+  }
+
+  .code {
+    background: var(--code-bg); color: var(--code-fg);
+    border-radius: var(--radius); margin: 16px 0 24px;
+    overflow: hidden; box-shadow: var(--shadow-md);
+  }
+  .code-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px; background: rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    font-family: var(--mono); font-size: 12px; color: #aab1c2;
+  }
+  .code-header .dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    margin-right: 4px; vertical-align: middle; background: #4a5060;
+  }
+  .copy-btn {
+    background: transparent; border: 1px solid rgba(255,255,255,.1);
+    color: #aab1c2; font-size: 11px; font-family: var(--mono);
+    padding: 4px 10px; border-radius: 6px; cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .copy-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .copy-btn.copied { color: #8ec78e; border-color: #2f6b3a; }
+  pre { margin: 0; padding: 16px 20px; overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.65; }
+  pre code { font-family: inherit; }
+
+  .tk-kw   { color: var(--code-keyword); }
+  .tk-fn   { color: var(--code-fn); }
+  .tk-str  { color: var(--code-string); }
+  .tk-cmt  { color: var(--code-comment); font-style: italic; }
+  .tk-prop { color: var(--code-prop); }
+  .tk-num  { color: var(--code-num); }
+
+  .tabs { display: flex; gap: 2px; padding: 6px 10px; background: rgba(255,255,255,.03); border-bottom: 1px solid rgba(255,255,255,.06); flex-wrap: wrap; }
+  .tab-btn {
+    background: transparent; color: #aab1c2; border: 0;
+    padding: 6px 12px; font-family: var(--mono); font-size: 12px;
+    border-radius: 6px; cursor: pointer; white-space: nowrap;
+  }
+  .tab-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .tab-btn.active { background: rgba(194,81,11,.2); color: #e5e5e0; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .pc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .pc-grid { grid-template-columns: 1fr; } }
+  .pc-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px 22px; box-shadow: var(--shadow-sm);
+  }
+  .pc-card.pros { border-top: 3px solid var(--good); }
+  .pc-card.cons { border-top: 3px solid var(--bad); }
+  .pc-card h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
+  .pc-card.pros h3 { color: var(--good); }
+  .pc-card.cons h3 { color: var(--bad); }
+  .pc-card ul { margin: 0; padding-left: 0; list-style: none; }
+  .pc-card li { padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 14.5px; color: var(--text-muted); }
+  .pc-card li:last-child { border-bottom: 0; }
+  .pc-card li strong { color: var(--text); }
+  .badge-icon { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
+  .pros .badge-icon { background: var(--good); }
+  .cons .badge-icon { background: var(--bad); }
+
+  .files { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .files li { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; transition: border-color .15s, transform .15s; }
+  .files li:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+  .files .file-path { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500; }
+  .files .file-desc { font-size: 14px; color: var(--text-muted); margin-top: 2px; }
+  .files .file-icon { width: 36px; height: 36px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: -.02em; }
+  .file-icon.js  { background: var(--cfg-bg);  color: #966100; }
+  .file-icon.vue { background: var(--seam-bg); color: var(--seam-border); }
+  .file-icon.srv { background: var(--fac-bg);  color: #3a5cff; }
+
+  footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-faint); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <aside class="toc">
+    <p class="toc-eyebrow">On this page</p>
+    <ol id="toc-list">
+      <li><a href="#problem">Problem statement</a></li>
+      <li><a href="#diagram">How it works</a></li>
+      <li><a href="#implementation">Implementation</a></li>
+      <li><a href="#advantages">Trade-offs</a></li>
+      <li><a href="#files">Key files</a></li>
+    </ol>
+  </aside>
+
+  <main>
+
+    <a class="back-link" href="index.html"><span class="arrow">←</span> All patterns</a>
+
+    <header class="hero">
+      <span class="eyebrow">Pattern</span>
+      <h1>Submission Adapter Seam</h1>
+      <p class="lede">
+        A required <code>submit</code> prop on the component is the only point of connection
+        between the form and the outside world — swap the function to change how issues are
+        submitted without touching the component.
+      </p>
+      <div class="meta">
+        <span class="chip">Layer&nbsp;·&nbsp;<code>src/IssueReporter.vue</code></span>
+        <span class="chip">Pattern&nbsp;·&nbsp;Prop Injection / Seam</span>
+        <span class="chip">Consumer&nbsp;·&nbsp;Host app</span>
+      </div>
+    </header>
+
+    <!-- Problem -->
+    <section id="problem">
+      <h2>Problem statement</h2>
+      <p>
+        A bug-reporting component needs to create GitHub issues. The obvious approach puts
+        the GitHub API call directly inside the component — but this creates three problems
+        that compound over time.
+      </p>
+      <p>
+        First, <strong>the token gets exposed.</strong> Client-side components are bundled
+        into the browser. A GitHub token passed as a prop ends up readable by anyone who opens
+        DevTools. Projects that can't tolerate this must route the call through a server —
+        but if the component hardcodes the direct path, there's no way to do that without
+        forking it.
+      </p>
+      <p>
+        Second, <strong>the component is untestable in isolation.</strong> Every test has to
+        either mock the network or use real credentials. You can't test the form, validation,
+        spinner, or success/error states without also setting up a GitHub API stub at the
+        network level.
+      </p>
+      <p>
+        Third, <strong>swapping submission targets requires editing the component.</strong>
+        If a project already has a backend or wants to route to a different issue tracker,
+        someone has to reach inside <code>IssueReporter.vue</code> and change it. There's no
+        configuration option — just a code change.
+      </p>
+      <div class="callout">
+        <strong>Core insight:</strong> The seam is the <code>submit</code> prop — a single
+        required function that the component calls with form data. Whatever that function does
+        is the caller's concern. The component just fires it and handles the result.
+      </div>
+    </section>
+
+    <!-- Diagram -->
+    <section id="diagram">
+      <h2>How it works</h2>
+      <p>
+        The component never decides how to submit. It exposes a <code>submit</code> prop —
+        a function — and calls it with the form data when the user submits. The caller
+        chooses which function to pass. Two built-in adapters ship with the package; any
+        async function matching the signature works in their place.
+      </p>
+
+      <div class="flow-diagram">
+        <svg viewBox="0 0 820 270" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Submission adapter seam diagram">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#5a5a55"/>
+            </marker>
+            <marker id="arr-orange" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#c2510b"/>
+            </marker>
+            <style>
+              .d-title { font-family: ui-sans-serif,system-ui,sans-serif; font-size:13px; fill:#1a1a18; font-weight:700; }
+              .d-sub   { font-family: ui-monospace,Menlo,monospace; font-size:10.5px; fill:#5a5a55; }
+              .d-grp   { font-family: ui-sans-serif,system-ui,sans-serif; font-size:11px; text-transform:uppercase; letter-spacing:.09em; fill:#8a8a82; font-weight:600; }
+              .d-edge  { font-family: ui-sans-serif,system-ui,sans-serif; font-size:11px; fill:#8a8a82; font-style:italic; }
+              .d-seam  { font-family: ui-sans-serif,system-ui,sans-serif; font-size:12px; fill:#c2510b; font-weight:700; }
+              .ln      { stroke:#5a5a55; stroke-width:1.5; fill:none; marker-end:url(#arr); }
+              .ln-or   { stroke:#c2510b; stroke-width:2; fill:none; marker-end:url(#arr-orange); }
+            </style>
+          </defs>
+
+          <!-- Left panel: adapter options -->
+          <rect x="10" y="30" width="240" height="210" rx="10"
+                fill="#fff8f2" stroke="#c2510b" stroke-width="1" stroke-dasharray="6 4"/>
+          <text class="d-grp" x="130" y="22" text-anchor="middle">Caller's choice of adapter</text>
+
+          <!-- createDirectAdapter -->
+          <rect x="22" y="48" width="216" height="50" rx="6" fill="#fff3eb" stroke="#c2510b" stroke-width="1.2"/>
+          <text class="d-title" x="130" y="70" text-anchor="middle">createDirectAdapter()</text>
+          <text class="d-sub"   x="130" y="88" text-anchor="middle">calls GitHub API directly from browser</text>
+
+          <!-- createProxyAdapter -->
+          <rect x="22" y="110" width="216" height="50" rx="6" fill="#fff3eb" stroke="#c2510b" stroke-width="1.2"/>
+          <text class="d-title" x="130" y="132" text-anchor="middle">createProxyAdapter()</text>
+          <text class="d-sub"   x="130" y="150" text-anchor="middle">POSTs to your server; token stays hidden</text>
+
+          <!-- custom fn -->
+          <rect x="22" y="172" width="216" height="50" rx="6" fill="#f4f4f2" stroke="#d4d2cc" stroke-width="1.2"/>
+          <text class="d-title" x="130" y="192" text-anchor="middle">custom async fn</text>
+          <text class="d-sub"   x="130" y="210" text-anchor="middle">Jira, Slack, another GitHub org…</text>
+
+          <!-- Arrows from adapters to seam line -->
+          <path class="ln-or" d="M252,73  L348,130"/>
+          <path class="ln-or" d="M252,135 L348,135"/>
+          <path class="ln-or" d="M252,197 L348,140"/>
+
+          <!-- Seam line -->
+          <line x1="360" y1="45" x2="360" y2="225" stroke="#c2510b" stroke-width="2.5" stroke-dasharray="6 3"/>
+          <text class="d-seam" x="360" y="38" text-anchor="middle">:submit</text>
+          <text class="d-grp"  x="360" y="240" text-anchor="middle">the seam</text>
+
+          <!-- Arrow from seam to IssueReporter -->
+          <path class="ln-or" d="M373,135 L430,135"/>
+
+          <!-- IssueReporter box -->
+          <rect x="430" y="60" width="200" height="150" rx="8" fill="#e7f5ec" stroke="#1f7a3a" stroke-width="1.5"/>
+          <text class="d-title" x="530" y="87"  text-anchor="middle">IssueReporter.vue</text>
+          <text class="d-sub"   x="530" y="108" text-anchor="middle">calls props.submit({</text>
+          <text class="d-sub"   x="530" y="123" text-anchor="middle">  title, description,</text>
+          <text class="d-sub"   x="530" y="138" text-anchor="middle">  type, context</text>
+          <text class="d-sub"   x="530" y="153" text-anchor="middle">})</text>
+          <text class="d-sub"   x="530" y="175" text-anchor="middle">handles success / error</text>
+          <text class="d-sub"   x="530" y="191" text-anchor="middle">renders spinner, link, message</text>
+
+          <!-- Arrows to outcomes -->
+          <path class="ln" d="M630,100 L680,80"/>
+          <path class="ln" d="M630,170 L680,190"/>
+
+          <!-- Success outcome -->
+          <rect x="680" y="55" width="130" height="50" rx="6" fill="#e7f5ec" stroke="#1f7a3a" stroke-width="1.2"/>
+          <text class="d-title" x="745" y="78"  text-anchor="middle">→ { url }</text>
+          <text class="d-sub"   x="745" y="95"  text-anchor="middle">issue link shown</text>
+
+          <!-- Error outcome -->
+          <rect x="680" y="165" width="130" height="50" rx="6" fill="#fbece5" stroke="#b1432a" stroke-width="1.2"/>
+          <text class="d-title" x="745" y="187" text-anchor="middle">throws Error</text>
+          <text class="d-sub"   x="745" y="205" text-anchor="middle">inline message shown</text>
+        </svg>
+
+        <div class="legend">
+          <span><i style="background:#fff3eb; border-color:#c2510b"></i> Adapter options</span>
+          <span><i style="background:#e7f5ec; border-color:#1f7a3a"></i> IssueReporter.vue</span>
+          <span><i style="background:#fff8f2; border-color:#c2510b"></i> submit prop (the seam)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Implementation -->
+    <section id="implementation">
+      <h2>Implementation in this codebase</h2>
+      <p>
+        The component treats <code>submit</code> as an opaque function. It extracts form
+        data, calls <code>props.submit(...)</code>, and handles whatever comes back. It has
+        no knowledge of GitHub, fetch, or any specific backend.
+      </p>
+
+      <div class="code">
+        <div class="tabs" role="tablist">
+          <button class="tab-btn active" data-tab="t-vue">IssueReporter.vue</button>
+          <button class="tab-btn" data-tab="t-direct">Direct adapter</button>
+          <button class="tab-btn" data-tab="t-proxy">Proxy adapter</button>
+          <button class="tab-btn" data-tab="t-custom">Custom adapter</button>
+        </div>
+
+        <!-- IssueReporter.vue -->
+        <div class="tab-panel active" id="t-vue">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;src/IssueReporter.vue</span>
+            <button class="copy-btn" data-copy-target="code-vue">Copy</button>
+          </div>
+<pre id="code-vue"><code><span class="tk-kw">const</span> props = <span class="tk-fn">defineProps</span>({
+  <span class="tk-prop">submit</span>: { <span class="tk-prop">type</span>: Function, <span class="tk-prop">required</span>: <span class="tk-kw">true</span> },
+  <span class="tk-cmt">// ...</span>
+})
+
+<span class="tk-kw">async function</span> <span class="tk-fn">handleSubmit</span>() {
+  submitting.<span class="tk-prop">value</span> = <span class="tk-kw">true</span>
+  error.<span class="tk-prop">value</span> = <span class="tk-kw">null</span>
+  <span class="tk-kw">try</span> {
+    <span class="tk-kw">const</span> result = <span class="tk-kw">await</span> props.<span class="tk-fn">submit</span>({
+      <span class="tk-prop">title</span>: form.<span class="tk-prop">title</span>,
+      <span class="tk-prop">description</span>: form.<span class="tk-prop">description</span>,
+      <span class="tk-prop">type</span>: form.<span class="tk-prop">type</span>,
+      <span class="tk-prop">context</span>: contextText.<span class="tk-prop">value</span>,
+    })
+    issueUrl.<span class="tk-prop">value</span> = result.<span class="tk-prop">url</span>
+  } <span class="tk-kw">catch</span> (e) {
+    error.<span class="tk-prop">value</span> = e.<span class="tk-prop">message</span>
+  } <span class="tk-kw">finally</span> {
+    submitting.<span class="tk-prop">value</span> = <span class="tk-kw">false</span>
+  }
+}</code></pre>
+        </div>
+
+        <!-- Direct adapter -->
+        <div class="tab-panel" id="t-direct">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;Host app — direct adapter (token in browser env)</span>
+            <button class="copy-btn" data-copy-target="code-direct">Copy</button>
+          </div>
+<pre id="code-direct"><code><span class="tk-kw">import</span> <span class="tk-fn">IssueReporter</span>, { <span class="tk-fn">createDirectAdapter</span> } <span class="tk-kw">from</span> <span class="tk-str">'@jamboid/gh-issue-reporter'</span>
+
+<span class="tk-cmt">// Factory captures repo and token. Component receives only the function.</span>
+<span class="tk-kw">const</span> submit = <span class="tk-fn">createDirectAdapter</span>({
+  <span class="tk-prop">repo</span>: <span class="tk-str">'owner/repo'</span>,
+  <span class="tk-prop">token</span>: import.meta.env.<span class="tk-prop">VITE_GITHUB_TOKEN</span>
+})</code></pre>
+        </div>
+
+        <!-- Proxy adapter -->
+        <div class="tab-panel" id="t-proxy">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;Host app — proxy adapter (token stays on server)</span>
+            <button class="copy-btn" data-copy-target="code-proxy">Copy</button>
+          </div>
+<pre id="code-proxy"><code><span class="tk-kw">import</span> <span class="tk-fn">IssueReporter</span>, { <span class="tk-fn">createProxyAdapter</span> } <span class="tk-kw">from</span> <span class="tk-str">'@jamboid/gh-issue-reporter'</span>
+
+<span class="tk-cmt">// POSTs form data to your server; the server calls GitHub with the token.</span>
+<span class="tk-cmt">// No credentials in the browser at all.</span>
+<span class="tk-kw">const</span> submit = <span class="tk-fn">createProxyAdapter</span>() <span class="tk-cmt">// defaults to POST /api/github/issues</span></code></pre>
+        </div>
+
+        <!-- Custom adapter -->
+        <div class="tab-panel" id="t-custom">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;Host app — custom adapter (any target)</span>
+            <button class="copy-btn" data-copy-target="code-custom">Copy</button>
+          </div>
+<pre id="code-custom"><code><span class="tk-cmt">// Any async function matching the signature works.
+// No component changes needed — just swap the function.</span>
+<span class="tk-kw">const</span> submit = <span class="tk-kw">async</span> ({ <span class="tk-prop">title</span>, <span class="tk-prop">description</span>, <span class="tk-prop">type</span>, <span class="tk-prop">context</span> }) =&gt; {
+  <span class="tk-kw">const</span> res = <span class="tk-kw">await</span> <span class="tk-fn">fetch</span>(<span class="tk-str">'/my/endpoint'</span>, {
+    <span class="tk-prop">method</span>: <span class="tk-str">'POST'</span>,
+    <span class="tk-prop">body</span>: JSON.<span class="tk-fn">stringify</span>({ <span class="tk-prop">title</span>, <span class="tk-prop">description</span>, <span class="tk-prop">type</span>, <span class="tk-prop">context</span> }),
+  })
+  <span class="tk-kw">const</span> data = <span class="tk-kw">await</span> res.<span class="tk-fn">json</span>()
+  <span class="tk-kw">if</span> (!res.<span class="tk-prop">ok</span>) <span class="tk-kw">throw new</span> <span class="tk-fn">Error</span>(data.<span class="tk-prop">message</span>)
+  <span class="tk-kw">return</span> { <span class="tk-prop">url</span>: data.<span class="tk-prop">url</span> }
+}</code></pre>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Adapter contract:</strong> Any function satisfying
+        <code>({ title, description, type, context }) =&gt; Promise&lt;&#123; url &#125;&gt;</code>
+        is a valid adapter. The component never cares what's inside — it only reads
+        <code>result.url</code> on success or <code>e.message</code> on failure.
+      </div>
+    </section>
+
+    <!-- Trade-offs -->
+    <section id="advantages">
+      <h2>Trade-offs</h2>
+      <div class="pc-grid">
+        <div class="pc-card pros">
+          <h3><span class="badge-icon">+</span> Advantages</h3>
+          <ul>
+            <li><strong>Credentials stay where they belong.</strong> Direct adapters keep the token in the calling app's environment. Proxy adapters keep it on the server entirely. The component never sees it.</li>
+            <li><strong>Testable without network calls.</strong> Pass a <code>vi.fn()</code> as <code>submit</code> and assert on spinner, error, and success states without touching the network or needing credentials.</li>
+            <li><strong>No fork for custom targets.</strong> Any async function matching the signature works. Projects routing to Jira, Slack, or a different GitHub org don't touch the component.</li>
+          </ul>
+        </div>
+
+        <div class="pc-card cons">
+          <h3><span class="badge-icon">−</span> Disadvantages</h3>
+          <ul>
+            <li><strong>Caller must choose an adapter.</strong> <code>submit</code> is a required prop with no in-component fallback. Omitting it is a Vue runtime warning, not a clear install-time error.</li>
+            <li><strong>Informal adapter contract.</strong> There's no TypeScript interface enforcing the signature. A custom adapter that returns <code>&#123; html_url &#125;</code> instead of <code>&#123; url &#125;</code> silently breaks the success state.</li>
+            <li><strong>Error handling is the adapter's job.</strong> An adapter that catches and swallows errors leaves the UI in a perpetual submitting state — the component has no way to detect this.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key files -->
+    <section id="files">
+      <h2>Key files</h2>
+      <ul class="files">
+        <li>
+          <span class="file-icon vue">VUE</span>
+          <div>
+            <div class="file-path">src/IssueReporter.vue</div>
+            <div class="file-desc">Accepts <code>submit</code> as a required prop and calls it in <code>handleSubmit()</code>. Renders spinner, inline error, and success link based on the result. Has no knowledge of any specific backend.</div>
+          </div>
+        </li>
+        <li>
+          <span class="file-icon js">JS</span>
+          <div>
+            <div class="file-path">src/adapters.js</div>
+            <div class="file-desc"><code>createDirectAdapter</code> calls the GitHub API directly from the browser using a token captured at factory time. <code>createProxyAdapter</code> POSTs to a server-side route, keeping the token out of the browser entirely.</div>
+          </div>
+        </li>
+        <li>
+          <span class="file-icon srv">JS</span>
+          <div>
+            <div class="file-path">src/index.js</div>
+            <div class="file-desc">Re-exports the component and both adapters as the package's public client-side surface. Consumers import whatever combination they need from one entry point.</div>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <footer>
+      <span>gh-issue-reporter · patterns</span>
+      <span>Submission Adapter Seam</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const target = document.getElementById(btn.dataset.copyTarget);
+      if (!target) return;
+      try {
+        await navigator.clipboard.writeText(target.innerText);
+        const orig = btn.textContent;
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1400);
+      } catch { btn.textContent = 'Press ⌘C'; }
+    });
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      const container = btn.closest('.code');
+      container.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      container.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === tab));
+    });
+  });
+
+  const tocLinks = Array.from(document.querySelectorAll('.toc a'));
+  const sections = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const setActive = id => tocLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+  const observer = new IntersectionObserver(entries => {
+    const visible = entries.filter(e => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+    if (visible[0]) setActive(visible[0].target.id);
+  }, { rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.25, 0.5, 1] });
+  sections.forEach(s => observer.observe(s));
+  tocLinks.forEach(a => {
+    a.addEventListener('click', e => {
+      const id = a.getAttribute('href').slice(1);
+      const el = document.getElementById(id);
+      if (!el) return;
+      e.preventDefault();
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.replaceState(null, '', '#' + id);
+    });
+  });
+</script>
+
+</body>
+</html>

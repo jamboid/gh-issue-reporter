@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shared API Primitive — Pattern</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --surface-alt: #f4f4f2;
+    --border: #e5e4e0;
+    --border-strong: #d4d2cc;
+    --text: #1a1a18;
+    --text-muted: #5a5a55;
+    --text-faint: #8a8a82;
+    --accent: #7c3aed;
+    --accent-soft: #f3effe;
+    --good: #1f7a3a;
+    --good-soft: #e7f5ec;
+    --bad: #b1432a;
+    --bad-soft: #fbece5;
+    --cfg-bg: #fff5e1;
+    --cfg-border: #d4a142;
+    --fac-bg: #eaf0ff;
+    --fac-border: #3a5cff;
+    --clo-bg: #e7f5ec;
+    --clo-border: #1f7a3a;
+    --prim-bg: #f3effe;
+    --prim-border: #7c3aed;
+    --api-bg: #1e2030;
+    --api-border: #3a3f55;
+    --code-bg: #16181d;
+    --code-fg: #e5e5e0;
+    --code-comment: #7e8aa1;
+    --code-string: #c5d99d;
+    --code-keyword: #c697e6;
+    --code-fn: #8ec7ff;
+    --code-prop: #ffd28a;
+    --code-num: #f5a97f;
+    --radius: 10px;
+    --radius-lg: 14px;
+    --shadow-sm: 0 1px 2px rgba(20,20,18,.04);
+    --shadow-md: 0 4px 14px rgba(20,20,18,.06);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: var(--sans); color: var(--text); background: var(--bg); line-height: 1.6; font-size: 16px; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .page { display: grid; grid-template-columns: 260px minmax(0, 1fr); max-width: 1200px; margin: 0 auto; gap: 48px; padding: 48px 32px; }
+  @media (max-width: 900px) { .page { grid-template-columns: 1fr; gap: 24px; padding: 24px 20px; } .toc { position: static !important; } }
+
+  .toc { position: sticky; top: 32px; align-self: start; font-size: 14px; }
+  .toc-eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: 11px; font-weight: 600; color: var(--text-faint); margin: 0 0 12px; }
+  .toc ol { list-style: none; padding: 0; margin: 0; }
+  .toc li { margin: 2px 0; }
+  .toc a { display: block; padding: 6px 10px; border-radius: 6px; color: var(--text-muted); border-left: 2px solid transparent; }
+  .toc a:hover { background: var(--surface-alt); text-decoration: none; color: var(--text); }
+  .toc a.active { background: var(--accent-soft); color: var(--accent); border-left-color: var(--accent); font-weight: 500; }
+
+  .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 20px; padding: 4px 10px 4px 6px; border-radius: 6px; transition: color .15s, background .15s; }
+  .back-link:hover { color: var(--accent); background: var(--accent-soft); text-decoration: none; }
+  .back-link .arrow { display: inline-block; transition: transform .15s; }
+  .back-link:hover .arrow { transform: translateX(-2px); }
+
+  .hero { margin-bottom: 48px; }
+  .eyebrow { display: inline-block; font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); padding: 4px 10px; border-radius: 999px; margin-bottom: 16px; }
+  h1 { font-family: var(--serif); font-size: 44px; font-weight: 600; line-height: 1.15; letter-spacing: -.01em; margin: 0 0 16px; }
+  .lede { font-size: 19px; color: var(--text-muted); margin: 0 0 24px; max-width: 62ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; color: var(--text-muted); font-weight: 500; }
+  .chip code { font-size: 12px; background: transparent; padding: 0; color: var(--text); }
+
+  section { margin-bottom: 56px; scroll-margin-top: 24px; }
+  h2 { font-family: var(--serif); font-size: 28px; font-weight: 600; letter-spacing: -.005em; margin: 0 0 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 16px; font-weight: 600; margin: 24px 0 10px; }
+  p { margin: 0 0 16px; }
+  p code, li code, td code { font-family: var(--mono); font-size: .88em; background: var(--surface-alt); border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px; }
+
+  .callout { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); padding: 16px 20px; border-radius: var(--radius); margin: 20px 0; box-shadow: var(--shadow-sm); }
+
+  .flow-diagram { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px 20px 20px; margin: 16px 0 24px; box-shadow: var(--shadow-sm); overflow-x: auto; }
+  .flow-diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-top: 18px; font-size: 13px; color: var(--text-muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1.5px solid; flex-shrink: 0; }
+
+  .code { background: var(--code-bg); color: var(--code-fg); border-radius: var(--radius); margin: 16px 0 24px; overflow: hidden; box-shadow: var(--shadow-md); }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: rgba(255,255,255,.04); border-bottom: 1px solid rgba(255,255,255,.06); font-family: var(--mono); font-size: 12px; color: #aab1c2; }
+  .code-header .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; background: #4a5060; }
+  .copy-btn { background: transparent; border: 1px solid rgba(255,255,255,.1); color: #aab1c2; font-size: 11px; font-family: var(--mono); padding: 4px 10px; border-radius: 6px; cursor: pointer; transition: background .15s, color .15s; }
+  .copy-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .copy-btn.copied { color: #8ec78e; border-color: #2f6b3a; }
+  pre { margin: 0; padding: 16px 20px; overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.65; }
+  pre code { font-family: inherit; }
+
+  .tk-kw   { color: var(--code-keyword); }
+  .tk-fn   { color: var(--code-fn); }
+  .tk-str  { color: var(--code-string); }
+  .tk-cmt  { color: var(--code-comment); font-style: italic; }
+  .tk-prop { color: var(--code-prop); }
+  .tk-num  { color: var(--code-num); }
+
+  .tabs { display: flex; gap: 2px; padding: 6px 10px; background: rgba(255,255,255,.03); border-bottom: 1px solid rgba(255,255,255,.06); flex-wrap: wrap; }
+  .tab-btn { background: transparent; color: #aab1c2; border: 0; padding: 6px 12px; font-family: var(--mono); font-size: 12px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+  .tab-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .tab-btn.active { background: rgba(124,58,237,.2); color: #e5e5e0; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .pc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .pc-grid { grid-template-columns: 1fr; } }
+  .pc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 22px; box-shadow: var(--shadow-sm); }
+  .pc-card.pros { border-top: 3px solid var(--good); }
+  .pc-card.cons { border-top: 3px solid var(--bad); }
+  .pc-card h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
+  .pc-card.pros h3 { color: var(--good); }
+  .pc-card.cons h3 { color: var(--bad); }
+  .pc-card ul { margin: 0; padding-left: 0; list-style: none; }
+  .pc-card li { padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 14.5px; color: var(--text-muted); }
+  .pc-card li:last-child { border-bottom: 0; }
+  .pc-card li strong { color: var(--text); }
+  .badge-icon { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
+  .pros .badge-icon { background: var(--good); }
+  .cons .badge-icon { background: var(--bad); }
+
+  .files { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .files li { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; transition: border-color .15s, transform .15s; }
+  .files li:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+  .files .file-path { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500; }
+  .files .file-desc { font-size: 14px; color: var(--text-muted); margin-top: 2px; }
+  .files .file-icon { width: 36px; height: 36px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: -.02em; }
+  .file-icon.js  { background: var(--cfg-bg);  color: #966100; }
+  .file-icon.prm { background: var(--prim-bg); color: var(--accent); }
+
+  footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-faint); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <aside class="toc">
+    <p class="toc-eyebrow">On this page</p>
+    <ol id="toc-list">
+      <li><a href="#problem">Problem statement</a></li>
+      <li><a href="#diagram">How it works</a></li>
+      <li><a href="#implementation">Implementation</a></li>
+      <li><a href="#advantages">Trade-offs</a></li>
+      <li><a href="#files">Key files</a></li>
+    </ol>
+  </aside>
+
+  <main>
+
+    <a class="back-link" href="index.html"><span class="arrow">←</span> All patterns</a>
+
+    <header class="hero">
+      <span class="eyebrow">Pattern</span>
+      <h1>Shared API Primitive</h1>
+      <p class="lede">
+        One function owns every detail of the GitHub API call — URL, headers, error shape,
+        response normalisation — so two callers in different environments get identical
+        behaviour from a single source of truth.
+      </p>
+      <div class="meta">
+        <span class="chip">Layer&nbsp;·&nbsp;<code>src/githubService.js</code></span>
+        <span class="chip">Pattern&nbsp;·&nbsp;Shared Primitive / DRY</span>
+        <span class="chip">Callers&nbsp;·&nbsp;adapters.js + githubService</span>
+      </div>
+    </header>
+
+    <!-- Problem -->
+    <section id="problem">
+      <h2>Problem statement</h2>
+      <p>
+        When multiple parts of a codebase need to call the same external API, the natural
+        instinct is to write the API call wherever it's first needed, then copy it when a
+        second caller appears. This produces a fragile codebase in predictable ways.
+      </p>
+      <p>
+        <strong>Headers drift.</strong> The GitHub API requires specific headers —
+        <code>Authorization</code>, <code>Accept</code>, <code>X-GitHub-Api-Version</code>.
+        Written in two places, one copy will eventually fall behind: wrong API version,
+        missing header, subtly different error handling.
+      </p>
+      <p>
+        <strong>Response parsing duplicates.</strong> Both callers need to read
+        <code>html_url</code> from the response JSON and normalise it to <code>&#123; url &#125;</code>.
+        Two implementations means two places where this mapping can be wrong.
+      </p>
+      <p>
+        <strong>Error handling splits.</strong> One caller might check <code>res.ok</code>
+        before parsing JSON; another might read the error body for a user-facing message.
+        The difference is invisible until something breaks in production.
+      </p>
+      <div class="callout">
+        <strong>Core insight:</strong> The primitive is a function that knows everything
+        about talking to the GitHub Issues API. The thin wrappers above it know only what
+        differs between their callers — how to format the body, what labels to use. If GitHub
+        changes their API version header, there is exactly one line to update.
+      </div>
+    </section>
+
+    <!-- Diagram -->
+    <section id="diagram">
+      <h2>How it works</h2>
+      <p>
+        Two callers sit above the primitive: <code>createDirectAdapter</code> formats the
+        body from form fields; <code>githubService.createIssue</code> accepts a
+        pre-formatted body from the router. Neither touches headers, status codes, or response
+        shapes. Those live exclusively in <code>postGitHubIssue</code>.
+      </p>
+
+      <div class="flow-diagram">
+        <svg viewBox="0 0 820 310" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Shared API primitive diagram — funnel showing two thin wrappers converging on one primitive">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#5a5a55"/>
+            </marker>
+            <marker id="arr-purple" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#7c3aed"/>
+            </marker>
+            <style>
+              .d-title { font-family: ui-sans-serif,system-ui,sans-serif; font-size:13px; fill:#1a1a18; font-weight:700; }
+              .d-sub   { font-family: ui-monospace,Menlo,monospace; font-size:10.5px; fill:#5a5a55; }
+              .d-grp   { font-family: ui-sans-serif,system-ui,sans-serif; font-size:11px; text-transform:uppercase; letter-spacing:.09em; fill:#8a8a82; font-weight:600; }
+              .d-edge  { font-family: ui-sans-serif,system-ui,sans-serif; font-size:11px; fill:#8a8a82; font-style:italic; }
+              .d-prim  { font-family: ui-sans-serif,system-ui,sans-serif; font-size:13px; fill:#7c3aed; font-weight:700; }
+              .ln      { stroke:#5a5a55; stroke-width:1.5; fill:none; marker-end:url(#arr); }
+              .ln-pu   { stroke:#7c3aed; stroke-width:1.8; fill:none; marker-end:url(#arr-purple); }
+            </style>
+          </defs>
+
+          <!-- Top row: thin wrappers -->
+          <text class="d-grp" x="410" y="20" text-anchor="middle">Thin wrappers — each handles only what differs</text>
+
+          <!-- createDirectAdapter (client path, left) -->
+          <rect x="20" y="32" width="280" height="90" rx="8" fill="#fff5e1" stroke="#d4a142" stroke-width="1.5"/>
+          <text class="d-title" x="160" y="58"  text-anchor="middle">createDirectAdapter</text>
+          <text class="d-sub"   x="160" y="77"  text-anchor="middle">formats body from form fields</text>
+          <text class="d-sub"   x="160" y="93"  text-anchor="middle">formatIssueBody({ description, context })</text>
+          <text class="d-sub"   x="160" y="109" text-anchor="middle">labels: [type]</text>
+          <text class="d-grp"   x="160" y="128" text-anchor="middle">client path (browser)</text>
+
+          <!-- githubService.createIssue (server path, right) -->
+          <rect x="520" y="32" width="280" height="90" rx="8" fill="#eaf0ff" stroke="#3a5cff" stroke-width="1.5"/>
+          <text class="d-title" x="660" y="58"  text-anchor="middle">githubService.createIssue</text>
+          <text class="d-sub"   x="660" y="77"  text-anchor="middle">body already formatted by router</text>
+          <text class="d-sub"   x="660" y="93"  text-anchor="middle">accepts pre-built body string</text>
+          <text class="d-sub"   x="660" y="109" text-anchor="middle">labels: [label]</text>
+          <text class="d-grp"   x="660" y="128" text-anchor="middle">server path (Node.js)</text>
+
+          <!-- Convergence arrows -->
+          <path class="ln-pu" d="M230,122 L370,175"/>
+          <path class="ln-pu" d="M590,122 L450,175"/>
+
+          <!-- postGitHubIssue primitive (center) -->
+          <rect x="250" y="152" width="320" height="110" rx="10"
+                fill="#f3effe" stroke="#7c3aed" stroke-width="2"/>
+          <text class="d-prim" x="410" y="178" text-anchor="middle">postGitHubIssue</text>
+          <text class="d-sub"  x="410" y="197" text-anchor="middle">URL, Authorization header, Accept,</text>
+          <text class="d-sub"  x="410" y="213" text-anchor="middle">X-GitHub-Api-Version: 2022-11-28</text>
+          <text class="d-sub"  x="410" y="229" text-anchor="middle">checks res.ok → throws SubmissionError</text>
+          <text class="d-sub"  x="410" y="245" text-anchor="middle">returns { url: data.html_url }</text>
+
+          <!-- Arrow: primitive → GitHub API -->
+          <path class="ln" d="M410,262 L410,280"/>
+
+          <!-- GitHub API box -->
+          <rect x="250" y="280" width="320" height="25" rx="6" fill="#1e2030" stroke="#3a3f55" stroke-width="1.2"/>
+          <text style="font-family:ui-monospace,monospace;font-size:11px;fill:#aab1c2"
+                x="410" y="297" text-anchor="middle">GitHub Issues API</text>
+
+          <!-- "one fix" annotation -->
+          <text class="d-edge" x="680" y="210">← one place to update</text>
+          <text class="d-edge" x="680" y="226">if the API changes</text>
+        </svg>
+
+        <div class="legend">
+          <span><i style="background:#fff5e1; border-color:#d4a142"></i> Client wrapper (adapters.js)</span>
+          <span><i style="background:#eaf0ff; border-color:#3a5cff"></i> Server wrapper (githubService)</span>
+          <span><i style="background:#f3effe; border-color:#7c3aed"></i> Shared primitive</span>
+          <span><i style="background:#1e2030; border-color:#3a3f55"></i> GitHub API</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Implementation -->
+    <section id="implementation">
+      <h2>Implementation in this codebase</h2>
+      <p>
+        <code>postGitHubIssue</code> owns the entire GitHub API interaction. The two thin
+        wrappers prepare their inputs and delegate — neither touches fetch directly,
+        neither constructs the Authorization header, neither reads <code>html_url</code>.
+      </p>
+
+      <div class="code">
+        <div class="tabs" role="tablist">
+          <button class="tab-btn active" data-tab="t-prim">postGitHubIssue</button>
+          <button class="tab-btn" data-tab="t-client">createDirectAdapter wrapper</button>
+          <button class="tab-btn" data-tab="t-server">githubService wrapper</button>
+        </div>
+
+        <!-- postGitHubIssue -->
+        <div class="tab-panel active" id="t-prim">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;src/githubService.js — the primitive</span>
+            <button class="copy-btn" data-copy-target="code-prim">Copy</button>
+          </div>
+<pre id="code-prim"><code><span class="tk-kw">export async function</span> <span class="tk-fn">postGitHubIssue</span>({ <span class="tk-prop">repo</span>, <span class="tk-prop">token</span>, <span class="tk-prop">title</span>, <span class="tk-prop">body</span>, <span class="tk-prop">labels</span> }) {
+  <span class="tk-kw">const</span> res = <span class="tk-kw">await</span> <span class="tk-fn">fetch</span>(<span class="tk-str">`https://api.github.com/repos/<span class="tk-prop">${repo}</span>/issues`</span>, {
+    <span class="tk-prop">method</span>: <span class="tk-str">'POST'</span>,
+    <span class="tk-prop">headers</span>: {
+      <span class="tk-str">Authorization</span>: <span class="tk-str">`Bearer <span class="tk-prop">${token}</span>`</span>,
+      <span class="tk-str">'Content-Type'</span>: <span class="tk-str">'application/json'</span>,
+      <span class="tk-str">Accept</span>: <span class="tk-str">'application/vnd.github+json'</span>,
+      <span class="tk-str">'X-GitHub-Api-Version'</span>: <span class="tk-str">'2022-11-28'</span>,
+    },
+    <span class="tk-prop">body</span>: JSON.<span class="tk-fn">stringify</span>({ <span class="tk-prop">title</span>, <span class="tk-prop">body</span>, <span class="tk-prop">labels</span> }),
+  })
+  <span class="tk-kw">const</span> data = <span class="tk-kw">await</span> res.<span class="tk-fn">json</span>()
+  <span class="tk-kw">if</span> (!res.<span class="tk-prop">ok</span>) <span class="tk-kw">throw new</span> <span class="tk-fn">SubmissionError</span>(res.<span class="tk-prop">status</span>, data.<span class="tk-prop">message</span> || <span class="tk-str">`GitHub API error: <span class="tk-prop">${res.status}</span>`</span>)
+  <span class="tk-kw">return</span> { <span class="tk-prop">url</span>: data.<span class="tk-prop">html_url</span> }
+}</code></pre>
+        </div>
+
+        <!-- createDirectAdapter -->
+        <div class="tab-panel" id="t-client">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;src/adapters.js — thin client wrapper</span>
+            <button class="copy-btn" data-copy-target="code-client">Copy</button>
+          </div>
+<pre id="code-client"><code><span class="tk-cmt">// Only concern: format the body from form fields, then delegate.</span>
+<span class="tk-kw">export function</span> <span class="tk-fn">createDirectAdapter</span>({ <span class="tk-prop">repo</span>, <span class="tk-prop">token</span> }) {
+  <span class="tk-kw">return</span> ({ <span class="tk-prop">title</span>, <span class="tk-prop">description</span>, <span class="tk-prop">type</span>, <span class="tk-prop">context</span> }) =&gt; {
+    <span class="tk-kw">return</span> <span class="tk-fn">postGitHubIssue</span>({
+      <span class="tk-prop">repo</span>, <span class="tk-prop">token</span>, <span class="tk-prop">title</span>,
+      <span class="tk-prop">body</span>: <span class="tk-fn">formatIssueBody</span>({ <span class="tk-prop">description</span>, <span class="tk-prop">context</span> }),
+      <span class="tk-prop">labels</span>: [<span class="tk-prop">type</span>],
+    })
+  }
+}
+
+<span class="tk-cmt">// No fetch. No headers. No html_url. Just the glue.</span></code></pre>
+        </div>
+
+        <!-- githubService -->
+        <div class="tab-panel" id="t-server">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;src/githubService.js — thin server wrapper</span>
+            <button class="copy-btn" data-copy-target="code-server">Copy</button>
+          </div>
+<pre id="code-server"><code><span class="tk-cmt">// Only concern: accept a pre-formatted body from the router, then delegate.</span>
+<span class="tk-kw">export function</span> <span class="tk-fn">githubService</span>({ <span class="tk-prop">repo</span>, <span class="tk-prop">token</span> }) {
+  <span class="tk-kw">if</span> (!<span class="tk-prop">token</span>) <span class="tk-kw">throw new</span> <span class="tk-fn">SubmissionError</span>(<span class="tk-num">503</span>, <span class="tk-str">'token is required'</span>)
+  <span class="tk-kw">return</span> {
+    <span class="tk-fn">createIssue</span>({ <span class="tk-prop">title</span>, <span class="tk-prop">body</span>, <span class="tk-prop">label</span> }) {
+      <span class="tk-kw">return</span> <span class="tk-fn">postGitHubIssue</span>({ <span class="tk-prop">repo</span>, <span class="tk-prop">token</span>, <span class="tk-prop">title</span>, <span class="tk-prop">body</span>, <span class="tk-prop">labels</span>: [<span class="tk-prop">label</span>] })
+    },
+  }
+}
+
+<span class="tk-cmt">// No fetch. No Accept header. No html_url. Just the glue.</span></code></pre>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>The deletion test:</strong> If you deleted <code>postGitHubIssue</code>,
+        the complexity wouldn't disappear — it would reappear in both wrappers. Every line
+        you'd have to duplicate is a line the primitive is earning its keep. That's the
+        signal that the abstraction is the right size.
+      </div>
+    </section>
+
+    <!-- Trade-offs -->
+    <section id="advantages">
+      <h2>Trade-offs</h2>
+      <div class="pc-grid">
+        <div class="pc-card pros">
+          <h3><span class="badge-icon">+</span> Advantages</h3>
+          <ul>
+            <li><strong>Locality.</strong> All GitHub API mechanics — URL construction, headers, response parsing, error shape — live in one function. One place to read, debug, and update.</li>
+            <li><strong>Consistent error shape.</strong> Both callers automatically throw <code>SubmissionError</code> with the correct HTTP status. There's no way for them to diverge in how failures are reported.</li>
+            <li><strong>Tests collapse.</strong> The primitive's tests cover the fetch logic once. Wrapper tests only verify their own glue — no need to re-stub the same <code>fetch</code> headers in two test files.</li>
+          </ul>
+        </div>
+
+        <div class="pc-card cons">
+          <h3><span class="badge-icon">−</span> Disadvantages</h3>
+          <ul>
+            <li><strong>One more indirection to trace.</strong> A developer reading <code>createDirectAdapter</code> for the first time hits an import and must follow it to understand what actually happens at the network level.</li>
+            <li><strong>The primitive's interface must satisfy both callers.</strong> Both pass <code>labels</code> as an array, <code>body</code> as a pre-formatted string. If a future caller needs different behaviour, the primitive's interface must grow or a second primitive must be created.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key files -->
+    <section id="files">
+      <h2>Key files</h2>
+      <ul class="files">
+        <li>
+          <span class="file-icon prm">JS</span>
+          <div>
+            <div class="file-path">src/githubService.js — postGitHubIssue</div>
+            <div class="file-desc">The primitive. Owns the GitHub API URL, all required headers, JSON serialisation, <code>res.ok</code> checking, error shape, and <code>html_url → url</code> normalisation. Only function that calls <code>fetch</code> for GitHub.</div>
+          </div>
+        </li>
+        <li>
+          <span class="file-icon js">JS</span>
+          <div>
+            <div class="file-path">src/adapters.js — createDirectAdapter</div>
+            <div class="file-desc">Thin client-side wrapper. Formats the issue body from form fields using <code>formatIssueBody</code>, then delegates everything else to <code>postGitHubIssue</code>. No fetch, no headers.</div>
+          </div>
+        </li>
+        <li>
+          <span class="file-icon js">JS</span>
+          <div>
+            <div class="file-path">src/githubService.js — githubService</div>
+            <div class="file-desc">Thin server-side wrapper. Accepts a pre-formatted body from the router and delegates to <code>postGitHubIssue</code>. Guards against a missing token at construction time.</div>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <footer>
+      <span>gh-issue-reporter · patterns</span>
+      <span>Shared API Primitive</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const target = document.getElementById(btn.dataset.copyTarget);
+      if (!target) return;
+      try {
+        await navigator.clipboard.writeText(target.innerText);
+        const orig = btn.textContent;
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1400);
+      } catch { btn.textContent = 'Press ⌘C'; }
+    });
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      const container = btn.closest('.code');
+      container.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      container.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === tab));
+    });
+  });
+
+  const tocLinks = Array.from(document.querySelectorAll('.toc a'));
+  const sections = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const setActive = id => tocLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+  const observer = new IntersectionObserver(entries => {
+    const visible = entries.filter(e => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+    if (visible[0]) setActive(visible[0].target.id);
+  }, { rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.25, 0.5, 1] });
+  sections.forEach(s => observer.observe(s));
+  tocLinks.forEach(a => {
+    a.addEventListener('click', e => {
+      const id = a.getAttribute('href').slice(1);
+      const el = document.getElementById(id);
+      if (!el) return;
+      e.preventDefault();
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.replaceState(null, '', '#' + id);
+    });
+  });
+</script>
+
+</body>
+</html>

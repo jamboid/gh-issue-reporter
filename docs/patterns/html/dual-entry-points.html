@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dual Entry Points — Pattern</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --surface-alt: #f4f4f2;
+    --border: #e5e4e0;
+    --border-strong: #d4d2cc;
+    --text: #1a1a18;
+    --text-muted: #5a5a55;
+    --text-faint: #8a8a82;
+    --accent: #3a5cff;
+    --accent-soft: #eaf0ff;
+    --good: #1f7a3a;
+    --good-soft: #e7f5ec;
+    --bad: #b1432a;
+    --bad-soft: #fbece5;
+    --cfg-bg: #fff5e1;
+    --cfg-border: #d4a142;
+    --fac-bg: #eaf0ff;
+    --fac-border: #3a5cff;
+    --clo-bg: #e7f5ec;
+    --clo-border: #1f7a3a;
+    --api-bg: #1e2030;
+    --api-border: #3a3f55;
+    --code-bg: #16181d;
+    --code-fg: #e5e5e0;
+    --code-comment: #7e8aa1;
+    --code-string: #c5d99d;
+    --code-keyword: #c697e6;
+    --code-fn: #8ec7ff;
+    --code-prop: #ffd28a;
+    --code-num: #f5a97f;
+    --radius: 10px;
+    --radius-lg: 14px;
+    --shadow-sm: 0 1px 2px rgba(20,20,18,.04);
+    --shadow-md: 0 4px 14px rgba(20,20,18,.06);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.6;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .page {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 48px;
+    padding: 48px 32px;
+  }
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; gap: 24px; padding: 24px 20px; }
+    .toc { position: static !important; }
+  }
+
+  .toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    font-size: 14px;
+  }
+  .toc-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-faint);
+    margin: 0 0 12px;
+  }
+  .toc ol { list-style: none; padding: 0; margin: 0; }
+  .toc li { margin: 2px 0; }
+  .toc a {
+    display: block;
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: var(--text-muted);
+    border-left: 2px solid transparent;
+  }
+  .toc a:hover { background: var(--surface-alt); text-decoration: none; color: var(--text); }
+  .toc a.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 500;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    padding: 4px 10px 4px 6px;
+    border-radius: 6px;
+    transition: color .15s, background .15s;
+  }
+  .back-link:hover { color: var(--accent); background: var(--accent-soft); text-decoration: none; }
+  .back-link .arrow { display: inline-block; transition: transform .15s; }
+  .back-link:hover .arrow { transform: translateX(-2px); }
+
+  .hero { margin-bottom: 48px; }
+  .eyebrow {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-size: 44px;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -.01em;
+    margin: 0 0 16px;
+  }
+  .lede {
+    font-size: 19px;
+    color: var(--text-muted);
+    margin: 0 0 24px;
+    max-width: 62ch;
+  }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .chip code { font-size: 12px; background: transparent; padding: 0; color: var(--text); }
+
+  section { margin-bottom: 56px; scroll-margin-top: 24px; }
+  h2 {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -.005em;
+    margin: 0 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 16px; font-weight: 600; margin: 24px 0 10px; }
+  p { margin: 0 0 16px; }
+  p code, li code, td code {
+    font-family: var(--mono);
+    font-size: .88em;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: var(--radius);
+    margin: 20px 0;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .flow-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px 20px 20px;
+    margin: 16px 0 24px;
+    box-shadow: var(--shadow-sm);
+    overflow-x: auto;
+  }
+  .flow-diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 18px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    border: 1.5px solid;
+    flex-shrink: 0;
+  }
+
+  .code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    border-radius: var(--radius);
+    margin: 16px 0 24px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+  .code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #aab1c2;
+  }
+  .code-header .dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+    background: #4a5060;
+  }
+  .copy-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.1);
+    color: #aab1c2;
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .copy-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .copy-btn.copied { color: #8ec78e; border-color: #2f6b3a; }
+  pre {
+    margin: 0;
+    padding: 16px 20px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.65;
+  }
+  pre code { font-family: inherit; }
+
+  .tk-kw   { color: var(--code-keyword); }
+  .tk-fn   { color: var(--code-fn); }
+  .tk-str  { color: var(--code-string); }
+  .tk-cmt  { color: var(--code-comment); font-style: italic; }
+  .tk-prop { color: var(--code-prop); }
+  .tk-num  { color: var(--code-num); }
+
+  .tabs { display: flex; gap: 2px; padding: 6px 10px; background: rgba(255,255,255,.03); border-bottom: 1px solid rgba(255,255,255,.06); flex-wrap: wrap; }
+  .tab-btn {
+    background: transparent;
+    color: #aab1c2;
+    border: 0;
+    padding: 6px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .tab-btn.active { background: rgba(58,92,255,.18); color: #e5e5e0; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .pc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .pc-grid { grid-template-columns: 1fr; } }
+  .pc-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 22px;
+    box-shadow: var(--shadow-sm);
+  }
+  .pc-card.pros { border-top: 3px solid var(--good); }
+  .pc-card.cons { border-top: 3px solid var(--bad); }
+  .pc-card h3 {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 0 12px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .pc-card.pros h3 { color: var(--good); }
+  .pc-card.cons h3 { color: var(--bad); }
+  .pc-card ul { margin: 0; padding-left: 0; list-style: none; }
+  .pc-card li {
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border);
+    font-size: 14.5px;
+    color: var(--text-muted);
+  }
+  .pc-card li:last-child { border-bottom: 0; }
+  .pc-card li strong { color: var(--text); }
+  .badge-icon {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    color: #fff;
+  }
+  .pros .badge-icon { background: var(--good); }
+  .cons .badge-icon { background: var(--bad); }
+
+  .files { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .files li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    align-items: start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    transition: border-color .15s, transform .15s;
+  }
+  .files li:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+  .files .file-path { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500; }
+  .files .file-desc { font-size: 14px; color: var(--text-muted); margin-top: 2px; }
+  .files .file-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: -.02em;
+  }
+  .file-icon.js  { background: var(--cfg-bg);  color: #966100; }
+  .file-icon.vue { background: var(--clo-bg);  color: var(--good); }
+  .file-icon.srv { background: var(--fac-bg);  color: var(--accent); }
+  .file-icon.pkg { background: #f0f0ee; color: #444; }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-faint);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <aside class="toc">
+    <p class="toc-eyebrow">On this page</p>
+    <ol id="toc-list">
+      <li><a href="#problem">Problem statement</a></li>
+      <li><a href="#diagram">How it works</a></li>
+      <li><a href="#implementation">Implementation</a></li>
+      <li><a href="#advantages">Trade-offs</a></li>
+      <li><a href="#files">Key files</a></li>
+    </ol>
+  </aside>
+
+  <main>
+
+    <a class="back-link" href="index.html"><span class="arrow">←</span> All patterns</a>
+
+    <header class="hero">
+      <span class="eyebrow">Pattern</span>
+      <h1>Dual Entry Points</h1>
+      <p class="lede">
+        Two named export paths in <code>package.json</code> keep browser code and server code
+        in entirely separate bundles — a frontend bundler cannot accidentally pull in Express.
+      </p>
+      <div class="meta">
+        <span class="chip">Layer&nbsp;·&nbsp;<code>package.json</code></span>
+        <span class="chip">Pattern&nbsp;·&nbsp;Dual Entry Points</span>
+        <span class="chip">Environments&nbsp;·&nbsp;Browser + Node.js</span>
+      </div>
+    </header>
+
+    <!-- Problem -->
+    <section id="problem">
+      <h2>Problem statement</h2>
+      <p>
+        A package that ships both a Vue component and an Express router has a fundamental
+        conflict: Vue components run in the browser, Express runs in Node.js. The two
+        environments have almost nothing in common.
+      </p>
+      <p>
+        If all exports live behind a single entry point, a frontend bundler processing that
+        import has to at least consider everything the package re-exports. Express depends on
+        Node.js built-ins — <code>http</code>, <code>net</code>, <code>stream</code> — that
+        don't exist in the browser. The bundler either errors out or produces a broken bundle.
+      </p>
+      <p>
+        Bundle size is a second problem. A client app that only needs the Vue component
+        shouldn't pay the cost of shipping Express and all its dependencies to the browser.
+        Tree-shaking can't reliably help: some bundlers can't safely shake Node.js-specific
+        code, and the attempt itself can introduce subtle breakage.
+      </p>
+      <div class="callout">
+        <strong>Core insight:</strong> Two named export paths in <code>package.json</code>
+        give the bundler hard guarantees. Importing the client entry provably cannot reach
+        the server entry. No tree-shaking heuristics required.
+      </div>
+    </section>
+
+    <!-- Diagram -->
+    <section id="diagram">
+      <h2>How it works</h2>
+      <p>
+        The <code>exports</code> field in <code>package.json</code> acts as a router: it maps
+        import specifiers to files on disk. <code>"."</code> routes to the client file;
+        <code>"./server"</code> routes to the server file. Each file re-exports only what
+        belongs in that environment.
+      </p>
+
+      <div class="flow-diagram">
+        <svg viewBox="0 0 820 250" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Dual entry point routing diagram">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#5a5a55"/>
+            </marker>
+            <marker id="arr-blue" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#3a5cff"/>
+            </marker>
+            <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#1f7a3a"/>
+            </marker>
+            <style>
+              .d-title { font-family: ui-sans-serif,system-ui,sans-serif; font-size:14px; fill:#1a1a18; font-weight:700; }
+              .d-sub   { font-family: ui-monospace,Menlo,monospace; font-size:11px; fill:#5a5a55; }
+              .d-grp   { font-family: ui-sans-serif,system-ui,sans-serif; font-size:11px; text-transform:uppercase; letter-spacing:.09em; fill:#8a8a82; font-weight:600; }
+              .d-edge  { font-family: ui-sans-serif,system-ui,sans-serif; font-size:11px; fill:#8a8a82; font-style:italic; }
+              .d-note  { font-family: ui-monospace,Menlo,monospace; font-size:10.5px; fill:#5a5a55; }
+              .ln-blue { stroke:#3a5cff; stroke-width:1.8; fill:none; marker-end:url(#arr-blue); }
+              .ln-green{ stroke:#1f7a3a; stroke-width:1.8; fill:none; marker-end:url(#arr-green); }
+            </style>
+          </defs>
+
+          <!-- package.json box -->
+          <rect x="18" y="70" width="170" height="110" rx="8" fill="#f4f4f2" stroke="#d4d2cc" stroke-width="1.5"/>
+          <text class="d-title" x="103" y="96"  text-anchor="middle">package.json</text>
+          <text class="d-sub"   x="103" y="116" text-anchor="middle">exports:</text>
+          <text class="d-sub"   x="103" y="133" text-anchor="middle">&quot;.&quot; → src/index.js</text>
+          <text class="d-sub"   x="103" y="150" text-anchor="middle">&quot;./server&quot; →</text>
+          <text class="d-sub"   x="103" y="165" text-anchor="middle">src/server.js</text>
+
+          <!-- Fork lines from package.json -->
+          <!-- Client path: from right side of pkg box, upper branch -->
+          <path class="ln-blue" d="M188,105 L248,105"/>
+          <!-- Server path: lower branch -->
+          <path class="ln-green" d="M188,155 L248,155"/>
+
+          <!-- src/index.js box (client, blue) -->
+          <rect x="248" y="72" width="165" height="66" rx="8" fill="#eaf0ff" stroke="#3a5cff" stroke-width="1.5"/>
+          <text class="d-title" x="330" y="97"  text-anchor="middle">src/index.js</text>
+          <text class="d-sub"   x="330" y="116" text-anchor="middle">IssueReporter (default)</text>
+          <text class="d-sub"   x="330" y="132" text-anchor="middle">createDirectAdapter</text>
+          <text class="d-note"  x="330" y="148" text-anchor="middle" fill="#3a5cff" font-style="italic">createProxyAdapter</text>
+
+          <!-- src/server.js box (server, green) -->
+          <rect x="248" y="152" width="165" height="58" rx="8" fill="#e7f5ec" stroke="#1f7a3a" stroke-width="1.5"/>
+          <text class="d-title" x="330" y="178" text-anchor="middle">src/server.js</text>
+          <text class="d-sub"   x="330" y="197" text-anchor="middle">githubService</text>
+          <text class="d-sub"   x="330" y="213" text-anchor="middle">githubRouter</text>
+
+          <!-- Arrows to consumer environments -->
+          <path class="ln-blue"  d="M413,105 L473,105"/>
+          <path class="ln-green" d="M413,181 L473,181"/>
+
+          <!-- Browser environment box -->
+          <rect x="473" y="44" width="320" height="110" rx="8" fill="#eaf0ff" stroke="#3a5cff" stroke-width="1.5"/>
+          <text class="d-grp"  x="633" y="65"  text-anchor="middle">Browser environment</text>
+          <text class="d-sub"  x="633" y="87"  text-anchor="middle">Bundled by Vite / webpack</text>
+          <text class="d-sub"  x="633" y="105" text-anchor="middle">import IssueReporter from</text>
+          <text class="d-note" x="633" y="121" text-anchor="middle">'@jamboid/gh-issue-reporter'</text>
+          <text class="d-sub"  x="633" y="140" text-anchor="middle">Express never enters this bundle</text>
+
+          <!-- Node.js environment box -->
+          <rect x="473" y="154" width="320" height="80" rx="8" fill="#e7f5ec" stroke="#1f7a3a" stroke-width="1.5"/>
+          <text class="d-grp"  x="633" y="175" text-anchor="middle">Node.js environment</text>
+          <text class="d-sub"  x="633" y="196" text-anchor="middle">import { githubRouter, githubService } from</text>
+          <text class="d-note" x="633" y="213" text-anchor="middle">'@jamboid/gh-issue-reporter/server'</text>
+          <text class="d-sub"  x="633" y="229" text-anchor="middle">Vue never enters this require</text>
+
+          <!-- "cannot cross" separator -->
+          <line x1="460" y1="30" x2="460" y2="245" stroke="#e5e4e0" stroke-width="1" stroke-dasharray="4 3"/>
+          <text class="d-grp" x="460" y="22" text-anchor="middle">import path</text>
+        </svg>
+
+        <div class="legend">
+          <span><i style="background:#eaf0ff; border-color:#3a5cff"></i> Client path (browser-safe)</span>
+          <span><i style="background:#e7f5ec; border-color:#1f7a3a"></i> Server path (Node.js)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Implementation -->
+    <section id="implementation">
+      <h2>Implementation in this codebase</h2>
+      <p>
+        The <code>exports</code> field in <code>package.json</code> is the source of truth.
+        Two named paths, two re-export files, zero overlap between them.
+      </p>
+
+      <div class="code">
+        <div class="tabs" role="tablist">
+          <button class="tab-btn active" data-tab="t-pkg">package.json</button>
+          <button class="tab-btn" data-tab="t-client">src/index.js</button>
+          <button class="tab-btn" data-tab="t-server">src/server.js</button>
+          <button class="tab-btn" data-tab="t-usage">Import examples</button>
+        </div>
+
+        <!-- package.json -->
+        <div class="tab-panel active" id="t-pkg">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;package.json</span>
+            <button class="copy-btn" data-copy-target="code-pkg">Copy</button>
+          </div>
+<pre id="code-pkg"><code>{
+  <span class="tk-str">"name"</span>: <span class="tk-str">"@jamboid/gh-issue-reporter"</span>,
+  <span class="tk-str">"exports"</span>: {
+    <span class="tk-str">"."</span>: <span class="tk-str">"./src/index.js"</span>,
+    <span class="tk-str">"./server"</span>: <span class="tk-str">"./src/server.js"</span>
+  }
+}</code></pre>
+        </div>
+
+        <!-- src/index.js -->
+        <div class="tab-panel" id="t-client">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;src/index.js — client entry</span>
+            <button class="copy-btn" data-copy-target="code-client">Copy</button>
+          </div>
+<pre id="code-client"><code><span class="tk-cmt">// Only browser-safe exports here — no Node.js modules.</span>
+<span class="tk-kw">export</span> { <span class="tk-kw">default</span> } <span class="tk-kw">from</span> <span class="tk-str">'./IssueReporter.vue'</span>
+<span class="tk-kw">export</span> { <span class="tk-fn">createDirectAdapter</span>, <span class="tk-fn">createProxyAdapter</span> } <span class="tk-kw">from</span> <span class="tk-str">'./adapters.js'</span></code></pre>
+        </div>
+
+        <!-- src/server.js -->
+        <div class="tab-panel" id="t-server">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;src/server.js — server entry</span>
+            <button class="copy-btn" data-copy-target="code-server">Copy</button>
+          </div>
+<pre id="code-server"><code><span class="tk-cmt">// Only Node.js / Express exports here — no Vue, no browser globals.</span>
+<span class="tk-kw">export</span> { <span class="tk-fn">githubService</span> } <span class="tk-kw">from</span> <span class="tk-str">'./githubService.js'</span>
+<span class="tk-kw">export</span> { <span class="tk-fn">githubRouter</span> } <span class="tk-kw">from</span> <span class="tk-str">'./githubRouter.js'</span></code></pre>
+        </div>
+
+        <!-- Import examples -->
+        <div class="tab-panel" id="t-usage">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;Consumer usage</span>
+            <button class="copy-btn" data-copy-target="code-usage">Copy</button>
+          </div>
+<pre id="code-usage"><code><span class="tk-cmt">// In a Vue app — Vite bundles this; Express is unreachable.</span>
+<span class="tk-kw">import</span> <span class="tk-fn">IssueReporter</span>, { <span class="tk-fn">createDirectAdapter</span> } <span class="tk-kw">from</span> <span class="tk-str">'@jamboid/gh-issue-reporter'</span>
+
+<span class="tk-cmt">// In an Express app — Node.js; Vue is never required.</span>
+<span class="tk-kw">import</span> { <span class="tk-fn">githubRouter</span>, <span class="tk-fn">githubService</span> } <span class="tk-kw">from</span> <span class="tk-str">'@jamboid/gh-issue-reporter/server'</span>
+
+<span class="tk-cmt">// Importing the wrong entry in the wrong environment fails loudly,</span>
+<span class="tk-cmt">// not silently — which is exactly what you want.</span></code></pre>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Bundler support:</strong> Vite, webpack, and Rollup all resolve the
+        <code>exports</code> field. Importing from <code>'@jamboid/gh-issue-reporter'</code>
+        is guaranteed by the package contract — not a naming convention — to never include
+        <code>src/server.js</code>.
+      </div>
+    </section>
+
+    <!-- Trade-offs -->
+    <section id="advantages">
+      <h2>Trade-offs</h2>
+      <div class="pc-grid">
+        <div class="pc-card pros">
+          <h3><span class="badge-icon">+</span> Advantages</h3>
+          <ul>
+            <li><strong>Clean environment separation.</strong> Frontend bundlers process only browser-safe code; Node.js processes only server code. No cross-environment pollution by construction.</li>
+            <li><strong>Bundle safety.</strong> A Vite build that imports from <code>'@jamboid/gh-issue-reporter'</code> cannot reach Express, even if Express is a dependency of the same monorepo.</li>
+            <li><strong>Explicit public API.</strong> The two entry files are the package's public surface. A developer reading <code>src/index.js</code> sees the entire client API in three lines.</li>
+          </ul>
+        </div>
+
+        <div class="pc-card cons">
+          <h3><span class="badge-icon">−</span> Disadvantages</h3>
+          <ul>
+            <li><strong>Two APIs to document and maintain.</strong> Changes to the package's public surface must be considered for both entry points — it's easy to accidentally expose something in one that shouldn't be there.</li>
+            <li><strong>Non-obvious server import path.</strong> <code>'@jamboid/gh-issue-reporter/server'</code> is a subpath that developers must know to look for. It won't appear in IDE autocomplete unless the editor supports package <code>exports</code> resolution.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key files -->
+    <section id="files">
+      <h2>Key files</h2>
+      <ul class="files">
+        <li>
+          <span class="file-icon pkg">{}</span>
+          <div>
+            <div class="file-path">package.json</div>
+            <div class="file-desc">Defines the <code>exports</code> map — the source of truth for what the package exposes and from which path. Changing the map here immediately affects what consumers can import.</div>
+          </div>
+        </li>
+        <li>
+          <span class="file-icon js">JS</span>
+          <div>
+            <div class="file-path">src/index.js</div>
+            <div class="file-desc">Client entry point. Re-exports <code>IssueReporter</code> as default, and <code>createDirectAdapter</code>, <code>createProxyAdapter</code> as named exports. No server-side imports.</div>
+          </div>
+        </li>
+        <li>
+          <span class="file-icon srv">JS</span>
+          <div>
+            <div class="file-path">src/server.js</div>
+            <div class="file-desc">Server entry point. Re-exports <code>githubService</code> and <code>githubRouter</code>. No Vue imports. This is the file a Node.js app receives when it imports from <code>'@jamboid/gh-issue-reporter/server'</code>.</div>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <footer>
+      <span>gh-issue-reporter · patterns</span>
+      <span>Dual Entry Points</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const target = document.getElementById(btn.dataset.copyTarget);
+      if (!target) return;
+      try {
+        await navigator.clipboard.writeText(target.innerText);
+        const orig = btn.textContent;
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1400);
+      } catch { btn.textContent = 'Press ⌘C'; }
+    });
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      const container = btn.closest('.code');
+      container.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      container.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === tab));
+    });
+  });
+
+  const tocLinks = Array.from(document.querySelectorAll('.toc a'));
+  const sections = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+
+  const setActive = id => tocLinks.forEach(a =>
+    a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+
+  const observer = new IntersectionObserver(entries => {
+    const visible = entries.filter(e => e.isIntersecting)
+      .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+    if (visible[0]) setActive(visible[0].target.id);
+  }, { rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.25, 0.5, 1] });
+
+  sections.forEach(s => observer.observe(s));
+
+  tocLinks.forEach(a => {
+    a.addEventListener('click', e => {
+      const id = a.getAttribute('href').slice(1);
+      const el = document.getElementById(id);
+      if (!el) return;
+      e.preventDefault();
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.replaceState(null, '', '#' + id);
+    });
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Injected Service Router — Pattern</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --surface-alt: #f4f4f2;
+    --border: #e5e4e0;
+    --border-strong: #d4d2cc;
+    --text: #1a1a18;
+    --text-muted: #5a5a55;
+    --text-faint: #8a8a82;
+    --accent: #1f7a3a;
+    --accent-soft: #e7f5ec;
+    --good: #1f7a3a;
+    --good-soft: #e7f5ec;
+    --bad: #b1432a;
+    --bad-soft: #fbece5;
+    --cfg-bg: #fff5e1;
+    --cfg-border: #d4a142;
+    --fac-bg: #eaf0ff;
+    --fac-border: #3a5cff;
+    --clo-bg: #e7f5ec;
+    --clo-border: #1f7a3a;
+    --api-bg: #1e2030;
+    --api-border: #3a3f55;
+    --code-bg: #16181d;
+    --code-fg: #e5e5e0;
+    --code-comment: #7e8aa1;
+    --code-string: #c5d99d;
+    --code-keyword: #c697e6;
+    --code-fn: #8ec7ff;
+    --code-prop: #ffd28a;
+    --code-num: #f5a97f;
+    --radius: 10px;
+    --radius-lg: 14px;
+    --shadow-sm: 0 1px 2px rgba(20,20,18,.04);
+    --shadow-md: 0 4px 14px rgba(20,20,18,.06);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans); color: var(--text); background: var(--bg);
+    line-height: 1.6; font-size: 16px;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .page {
+    display: grid; grid-template-columns: 260px minmax(0, 1fr);
+    max-width: 1200px; margin: 0 auto; gap: 48px; padding: 48px 32px;
+  }
+  @media (max-width: 900px) { .page { grid-template-columns: 1fr; gap: 24px; padding: 24px 20px; } .toc { position: static !important; } }
+
+  .toc { position: sticky; top: 32px; align-self: start; font-size: 14px; }
+  .toc-eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: 11px; font-weight: 600; color: var(--text-faint); margin: 0 0 12px; }
+  .toc ol { list-style: none; padding: 0; margin: 0; }
+  .toc li { margin: 2px 0; }
+  .toc a { display: block; padding: 6px 10px; border-radius: 6px; color: var(--text-muted); border-left: 2px solid transparent; }
+  .toc a:hover { background: var(--surface-alt); text-decoration: none; color: var(--text); }
+  .toc a.active { background: var(--accent-soft); color: var(--accent); border-left-color: var(--accent); font-weight: 500; }
+
+  .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 20px; padding: 4px 10px 4px 6px; border-radius: 6px; transition: color .15s, background .15s; }
+  .back-link:hover { color: var(--accent); background: var(--accent-soft); text-decoration: none; }
+  .back-link .arrow { display: inline-block; transition: transform .15s; }
+  .back-link:hover .arrow { transform: translateX(-2px); }
+
+  .hero { margin-bottom: 48px; }
+  .eyebrow { display: inline-block; font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); padding: 4px 10px; border-radius: 999px; margin-bottom: 16px; }
+  h1 { font-family: var(--serif); font-size: 44px; font-weight: 600; line-height: 1.15; letter-spacing: -.01em; margin: 0 0 16px; }
+  .lede { font-size: 19px; color: var(--text-muted); margin: 0 0 24px; max-width: 62ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; color: var(--text-muted); font-weight: 500; }
+  .chip code { font-size: 12px; background: transparent; padding: 0; color: var(--text); }
+
+  section { margin-bottom: 56px; scroll-margin-top: 24px; }
+  h2 { font-family: var(--serif); font-size: 28px; font-weight: 600; letter-spacing: -.005em; margin: 0 0 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 16px; font-weight: 600; margin: 24px 0 10px; }
+  p { margin: 0 0 16px; }
+  p code, li code, td code { font-family: var(--mono); font-size: .88em; background: var(--surface-alt); border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px; }
+
+  .callout { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); padding: 16px 20px; border-radius: var(--radius); margin: 20px 0; box-shadow: var(--shadow-sm); }
+
+  .flow-diagram { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px 20px 20px; margin: 16px 0 24px; box-shadow: var(--shadow-sm); overflow-x: auto; }
+  .flow-diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-top: 18px; font-size: 13px; color: var(--text-muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1.5px solid; flex-shrink: 0; }
+
+  .code { background: var(--code-bg); color: var(--code-fg); border-radius: var(--radius); margin: 16px 0 24px; overflow: hidden; box-shadow: var(--shadow-md); }
+  .code-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: rgba(255,255,255,.04); border-bottom: 1px solid rgba(255,255,255,.06); font-family: var(--mono); font-size: 12px; color: #aab1c2; }
+  .code-header .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; background: #4a5060; }
+  .copy-btn { background: transparent; border: 1px solid rgba(255,255,255,.1); color: #aab1c2; font-size: 11px; font-family: var(--mono); padding: 4px 10px; border-radius: 6px; cursor: pointer; transition: background .15s, color .15s; }
+  .copy-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .copy-btn.copied { color: #8ec78e; border-color: #2f6b3a; }
+  pre { margin: 0; padding: 16px 20px; overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.65; }
+  pre code { font-family: inherit; }
+
+  .tk-kw   { color: var(--code-keyword); }
+  .tk-fn   { color: var(--code-fn); }
+  .tk-str  { color: var(--code-string); }
+  .tk-cmt  { color: var(--code-comment); font-style: italic; }
+  .tk-prop { color: var(--code-prop); }
+  .tk-num  { color: var(--code-num); }
+
+  .tabs { display: flex; gap: 2px; padding: 6px 10px; background: rgba(255,255,255,.03); border-bottom: 1px solid rgba(255,255,255,.06); flex-wrap: wrap; }
+  .tab-btn { background: transparent; color: #aab1c2; border: 0; padding: 6px 12px; font-family: var(--mono); font-size: 12px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+  .tab-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .tab-btn.active { background: rgba(31,122,58,.2); color: #e5e5e0; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .pc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .pc-grid { grid-template-columns: 1fr; } }
+  .pc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 22px; box-shadow: var(--shadow-sm); }
+  .pc-card.pros { border-top: 3px solid var(--good); }
+  .pc-card.cons { border-top: 3px solid var(--bad); }
+  .pc-card h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
+  .pc-card.pros h3 { color: var(--good); }
+  .pc-card.cons h3 { color: var(--bad); }
+  .pc-card ul { margin: 0; padding-left: 0; list-style: none; }
+  .pc-card li { padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 14.5px; color: var(--text-muted); }
+  .pc-card li:last-child { border-bottom: 0; }
+  .pc-card li strong { color: var(--text); }
+  .badge-icon { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
+  .pros .badge-icon { background: var(--good); }
+  .cons .badge-icon { background: var(--bad); }
+
+  .files { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .files li { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; transition: border-color .15s, transform .15s; }
+  .files li:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+  .files .file-path { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 500; }
+  .files .file-desc { font-size: 14px; color: var(--text-muted); margin-top: 2px; }
+  .files .file-icon { width: 36px; height: 36px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: -.02em; }
+  .file-icon.js  { background: var(--cfg-bg);  color: #966100; }
+  .file-icon.tst { background: #f0f4ff; color: #3a5cff; }
+  .file-icon.srv { background: var(--clo-bg);  color: var(--good); }
+
+  footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-faint); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <aside class="toc">
+    <p class="toc-eyebrow">On this page</p>
+    <ol id="toc-list">
+      <li><a href="#problem">Problem statement</a></li>
+      <li><a href="#diagram">How it works</a></li>
+      <li><a href="#implementation">Implementation</a></li>
+      <li><a href="#advantages">Trade-offs</a></li>
+      <li><a href="#files">Key files</a></li>
+    </ol>
+  </aside>
+
+  <main>
+
+    <a class="back-link" href="index.html"><span class="arrow">←</span> All patterns</a>
+
+    <header class="hero">
+      <span class="eyebrow">Pattern</span>
+      <h1>Injected Service Router</h1>
+      <p class="lede">
+        The Express router accepts a service object as a parameter instead of constructing
+        one — making every HTTP status code testable in milliseconds with a mock, and making
+        the underlying service swappable without touching the route.
+      </p>
+      <div class="meta">
+        <span class="chip">Layer&nbsp;·&nbsp;<code>src/githubRouter.js</code></span>
+        <span class="chip">Pattern&nbsp;·&nbsp;Dependency Injection</span>
+        <span class="chip">Consumer&nbsp;·&nbsp;Host Express app</span>
+      </div>
+    </header>
+
+    <!-- Problem -->
+    <section id="problem">
+      <h2>Problem statement</h2>
+      <p>
+        An Express route handler needs to create a GitHub issue. The direct approach imports
+        the GitHub client inside the route handler, passes in credentials, and calls it
+        immediately. This feels natural but creates two problems.
+      </p>
+      <p>
+        First, <strong>the route is untestable without real credentials and a live network.</strong>
+        There's no way to verify that the route returns 401 when GitHub rejects the token,
+        or 422 when the issue body is malformed, without actually triggering those conditions
+        against GitHub's API. Tests become slow, flaky, and environment-dependent.
+      </p>
+      <p>
+        Second, <strong>the route is coupled to one specific implementation.</strong> If you
+        want to add a caching layer, swap GitHub for a different issue tracker, or log requests
+        before posting, you have to edit the route file. The route conflates "handle HTTP"
+        with "talk to GitHub."
+      </p>
+      <div class="callout">
+        <strong>Core insight:</strong> The router handles HTTP mechanics (extract fields,
+        map errors to status codes, return JSON). The service handles API mechanics. By passing
+        the service in as a parameter, the connection between them is made by the caller —
+        and can be swapped for a mock in tests.
+      </div>
+    </section>
+
+    <!-- Diagram -->
+    <section id="diagram">
+      <h2>How it works</h2>
+      <p>
+        <code>githubRouter</code> is a factory that takes a service and returns a configured
+        Express <code>Router</code>. In production the caller passes a real
+        <code>githubService</code>. In tests the caller passes a mock object — the router
+        never knows the difference.
+      </p>
+
+      <div class="flow-diagram">
+        <svg viewBox="0 0 820 290" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Injected service router diagram">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#5a5a55"/>
+            </marker>
+            <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#1f7a3a"/>
+            </marker>
+            <marker id="arr-blue" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#3a5cff"/>
+            </marker>
+            <style>
+              .d-title { font-family: ui-sans-serif,system-ui,sans-serif; font-size:13px; fill:#1a1a18; font-weight:700; }
+              .d-sub   { font-family: ui-monospace,Menlo,monospace; font-size:10.5px; fill:#5a5a55; }
+              .d-grp   { font-family: ui-sans-serif,system-ui,sans-serif; font-size:11px; text-transform:uppercase; letter-spacing:.09em; fill:#8a8a82; font-weight:600; }
+              .d-edge  { font-family: ui-sans-serif,system-ui,sans-serif; font-size:11px; fill:#8a8a82; font-style:italic; }
+              .ln      { stroke:#5a5a55; stroke-width:1.5; fill:none; marker-end:url(#arr); }
+              .ln-gr   { stroke:#1f7a3a; stroke-width:1.8; fill:none; marker-end:url(#arr-green); }
+              .ln-bl   { stroke:#3a5cff; stroke-width:1.8; fill:none; stroke-dasharray:5 3; marker-end:url(#arr-blue); }
+            </style>
+          </defs>
+
+          <!-- Production path panel -->
+          <rect x="10" y="30" width="795" height="115" rx="10"
+                fill="#f5fef7" stroke="#1f7a3a" stroke-width="1" stroke-dasharray="6 4"/>
+          <text class="d-grp" x="20" y="22">Production</text>
+
+          <!-- githubService box -->
+          <rect x="26" y="50" width="175" height="80" rx="7" fill="#e7f5ec" stroke="#1f7a3a" stroke-width="1.5"/>
+          <text class="d-title" x="113" y="76"  text-anchor="middle">githubService</text>
+          <text class="d-sub"   x="113" y="95"  text-anchor="middle">{ repo, token }</text>
+          <text class="d-sub"   x="113" y="112" text-anchor="middle">real GitHub credentials</text>
+
+          <!-- Arrow: githubService → githubRouter -->
+          <path class="ln-gr" d="M201,90 L266,90"/>
+          <text class="d-edge" x="233" y="82" text-anchor="middle">inject</text>
+
+          <!-- githubRouter box (shared, spans both rows) -->
+          <rect x="266" y="50" width="200" height="80" rx="7" fill="#e7f5ec" stroke="#1f7a3a" stroke-width="2"/>
+          <text class="d-title" x="366" y="76"  text-anchor="middle">githubRouter(service)</text>
+          <text class="d-sub"   x="366" y="95"  text-anchor="middle">POST /issues</text>
+          <text class="d-sub"   x="366" y="112" text-anchor="middle">maps HTTP ↔ service calls</text>
+
+          <!-- Arrow: router → GitHub API -->
+          <path class="ln-gr" d="M466,90 L546,90"/>
+          <text class="d-edge" x="506" y="82" text-anchor="middle">calls</text>
+
+          <!-- GitHub API box -->
+          <rect x="546" y="50" width="248" height="80" rx="7" fill="#1e2030" stroke="#3a3f55" stroke-width="1.5"/>
+          <text style="font-family:ui-sans-serif,sans-serif;font-size:14px;fill:#e5e5e0;font-weight:700"
+                x="670" y="88" text-anchor="middle">GitHub API</text>
+          <text style="font-family:ui-monospace,monospace;font-size:11px;fill:#aab1c2"
+                x="670" y="108" text-anchor="middle">POST /repos/:repo/issues</text>
+
+          <!-- Test path panel -->
+          <rect x="10" y="165" width="530" height="105" rx="10"
+                fill="#eaf0ff" stroke="#3a5cff" stroke-width="1" stroke-dasharray="6 4"/>
+          <text class="d-grp" x="20" y="158">Testing</text>
+
+          <!-- mockService box -->
+          <rect x="26" y="183" width="175" height="72" rx="7" fill="#eaf0ff" stroke="#3a5cff" stroke-width="1.5"/>
+          <text class="d-title" x="113" y="208" text-anchor="middle">mockService</text>
+          <text class="d-sub"   x="113" y="226" text-anchor="middle">{ createIssue: vi.fn() }</text>
+          <text class="d-sub"   x="113" y="243" text-anchor="middle">no credentials needed</text>
+
+          <!-- Arrow: mockService → githubRouter (test instance) -->
+          <path class="ln-bl" d="M201,219 L260,120"/>
+          <text class="d-edge" x="218" y="185" text-anchor="middle">inject</text>
+
+          <!-- No-network outcome -->
+          <rect x="350" y="183" width="180" height="72" rx="7" fill="#f4f4f2" stroke="#d4d2cc" stroke-width="1.2"/>
+          <text class="d-title" x="440" y="208" text-anchor="middle">No network call</text>
+          <text class="d-sub"   x="440" y="226" text-anchor="middle">mock controls return value</text>
+          <text class="d-sub"   x="440" y="243" text-anchor="middle">or what error is thrown</text>
+
+          <!-- Arrow: router → no-network -->
+          <path class="ln-bl" d="M408,130 L440,181"/>
+
+          <!-- Annotation: every status code testable -->
+          <text class="d-sub" x="550" y="210" fill="#3a5cff">Every HTTP status code testable.</text>
+          <text class="d-sub" x="550" y="228" fill="#3a5cff">No GitHub account required.</text>
+          <text class="d-sub" x="550" y="246" fill="#3a5cff">Runs in milliseconds.</text>
+        </svg>
+
+        <div class="legend">
+          <span><i style="background:#e7f5ec; border-color:#1f7a3a"></i> Production path (real service)</span>
+          <span><i style="background:#eaf0ff; border-color:#3a5cff"></i> Test path (mock service)</span>
+          <span><i style="background:#1e2030; border-color:#3a3f55"></i> GitHub API</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Implementation -->
+    <section id="implementation">
+      <h2>Implementation in this codebase</h2>
+      <p>
+        <code>githubRouter</code> never imports or constructs a service. It accepts whatever
+        object is passed in and calls <code>service.createIssue()</code>. The minimal expected
+        interface is: an object with a <code>createIssue({ title, body, label })</code> method
+        that returns a promise.
+      </p>
+
+      <div class="code">
+        <div class="tabs" role="tablist">
+          <button class="tab-btn active" data-tab="t-router">githubRouter.js</button>
+          <button class="tab-btn" data-tab="t-wiring">Server wiring</button>
+          <button class="tab-btn" data-tab="t-test">Test with mock</button>
+        </div>
+
+        <!-- githubRouter.js -->
+        <div class="tab-panel active" id="t-router">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;src/githubRouter.js</span>
+            <button class="copy-btn" data-copy-target="code-router">Copy</button>
+          </div>
+<pre id="code-router"><code><span class="tk-kw">import</span> { <span class="tk-fn">Router</span> } <span class="tk-kw">from</span> <span class="tk-str">'express'</span>
+
+<span class="tk-kw">export function</span> <span class="tk-fn">githubRouter</span>(<span class="tk-prop">service</span>) {
+  <span class="tk-kw">const</span> router = <span class="tk-fn">Router</span>()
+
+  router.<span class="tk-fn">post</span>(<span class="tk-str">'/issues'</span>, <span class="tk-kw">async</span> (req, res) =&gt; {
+    <span class="tk-kw">const</span> { <span class="tk-prop">title</span>, <span class="tk-prop">body</span>, <span class="tk-prop">label</span> } = req.<span class="tk-prop">body</span>
+    <span class="tk-kw">try</span> {
+      <span class="tk-kw">const</span> result = <span class="tk-kw">await</span> service.<span class="tk-fn">createIssue</span>({ <span class="tk-prop">title</span>, <span class="tk-prop">body</span>, <span class="tk-prop">label</span> })
+      res.<span class="tk-fn">json</span>(result)
+    } <span class="tk-kw">catch</span> (e) {
+      res.<span class="tk-fn">status</span>(e.<span class="tk-prop">status</span> || <span class="tk-num">500</span>).<span class="tk-fn">json</span>({ <span class="tk-prop">error</span>: e.<span class="tk-prop">message</span> })
+    }
+  })
+
+  <span class="tk-kw">return</span> router
+}</code></pre>
+        </div>
+
+        <!-- Server wiring -->
+        <div class="tab-panel" id="t-wiring">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;Host Express app</span>
+            <button class="copy-btn" data-copy-target="code-wiring">Copy</button>
+          </div>
+<pre id="code-wiring"><code><span class="tk-kw">import</span> { <span class="tk-fn">githubRouter</span>, <span class="tk-fn">githubService</span> } <span class="tk-kw">from</span> <span class="tk-str">'@jamboid/gh-issue-reporter/server'</span>
+
+<span class="tk-cmt">// Caller constructs the service and hands it to the router.</span>
+<span class="tk-kw">const</span> service = <span class="tk-fn">githubService</span>({
+  <span class="tk-prop">repo</span>: process.env.<span class="tk-prop">GITHUB_REPO</span>,
+  <span class="tk-prop">token</span>: process.env.<span class="tk-prop">GITHUB_TOKEN</span>,
+})
+
+app.<span class="tk-fn">use</span>(<span class="tk-str">'/api/github'</span>, <span class="tk-fn">githubRouter</span>(service))
+
+<span class="tk-cmt">// To swap in a caching layer or a different tracker,
+// just pass a different object — the router file doesn't change.</span></code></pre>
+        </div>
+
+        <!-- Test with mock -->
+        <div class="tab-panel" id="t-test">
+          <div class="code-header">
+            <span><span class="dot"></span><span class="dot" style="background:#5a4060"></span><span class="dot" style="background:#406050"></span>&nbsp;&nbsp;tests/githubRouter.test.js</span>
+            <button class="copy-btn" data-copy-target="code-test">Copy</button>
+          </div>
+<pre id="code-test"><code><span class="tk-kw">const</span> mockService = { <span class="tk-prop">createIssue</span>: vi.<span class="tk-fn">fn</span>() }
+<span class="tk-kw">const</span> app = <span class="tk-fn">express</span>()
+  .<span class="tk-fn">use</span>(<span class="tk-fn">express</span>.<span class="tk-fn">json</span>())
+  .<span class="tk-fn">use</span>(<span class="tk-str">'/'</span>, <span class="tk-fn">githubRouter</span>(mockService))
+
+<span class="tk-cmt">// Test a 401 without a real GitHub token.</span>
+mockService.<span class="tk-prop">createIssue</span>.<span class="tk-fn">mockRejectedValue</span>(
+  Object.<span class="tk-fn">assign</span>(<span class="tk-kw">new</span> <span class="tk-fn">Error</span>(<span class="tk-str">'Not authorized'</span>), { <span class="tk-prop">status</span>: <span class="tk-num">401</span> })
+)
+<span class="tk-kw">const</span> res = <span class="tk-kw">await</span> <span class="tk-fn">request</span>(app).<span class="tk-fn">post</span>(<span class="tk-str">'/issues'</span>).<span class="tk-fn">send</span>({})
+<span class="tk-fn">expect</span>(res.<span class="tk-prop">status</span>).<span class="tk-fn">toBe</span>(<span class="tk-num">401</span>)
+
+<span class="tk-cmt">// No network call. No credentials. Milliseconds.</span></code></pre>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Minimal interface:</strong> The router only requires
+        <code>service.createIssue({ title, body, label })</code> that returns a promise
+        resolving to <code>&#123; url &#125;</code>. Any object satisfying that shape —
+        <code>githubService</code>, a mock, or a custom wrapper — is a valid service.
+      </div>
+    </section>
+
+    <!-- Trade-offs -->
+    <section id="advantages">
+      <h2>Trade-offs</h2>
+      <div class="pc-grid">
+        <div class="pc-card pros">
+          <h3><span class="badge-icon">+</span> Advantages</h3>
+          <ul>
+            <li><strong>Full test coverage without a network.</strong> Every HTTP status code the router can emit is testable by controlling what the mock service throws or returns. Tests run in milliseconds.</li>
+            <li><strong>Router stays focused on HTTP.</strong> It extracts fields from the request, delegates to the service, and maps results back to HTTP responses. It does nothing else — no credentials, no API knowledge.</li>
+            <li><strong>Service is swappable.</strong> A custom service that logs to a database before posting, rate-limits requests, or routes to a different tracker replaces <code>githubService</code> without touching the router.</li>
+          </ul>
+        </div>
+
+        <div class="pc-card cons">
+          <h3><span class="badge-icon">−</span> Disadvantages</h3>
+          <ul>
+            <li><strong>Informal service interface.</strong> There's no TypeScript interface enforcing <code>&#123; createIssue(...): Promise&lt;&#123; url &#125;&gt; &#125;</code>. A service that returns <code>&#123; html_url &#125;</code> silently breaks the response without a runtime error.</li>
+            <li><strong>Wiring is the caller's responsibility.</strong> The caller must know to construct the service before the router, pass it in, and mount the router at the right path. There's no default configuration if they omit it.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key files -->
+    <section id="files">
+      <h2>Key files</h2>
+      <ul class="files">
+        <li>
+          <span class="file-icon srv">JS</span>
+          <div>
+            <div class="file-path">src/githubRouter.js</div>
+            <div class="file-desc">Accepts a service as a parameter; handles HTTP request/response only. Never imports or constructs the service itself. Exported via the server entry point.</div>
+          </div>
+        </li>
+        <li>
+          <span class="file-icon js">JS</span>
+          <div>
+            <div class="file-path">src/githubService.js</div>
+            <div class="file-desc">The default service implementation. Satisfies the router's expected interface: an object with <code>createIssue({ title, body, label })</code> that returns <code>Promise&lt;&#123; url &#125;&gt;</code>.</div>
+          </div>
+        </li>
+        <li>
+          <span class="file-icon tst">TST</span>
+          <div>
+            <div class="file-path">tests/githubRouter.test.js</div>
+            <div class="file-desc">Demonstrates testing the router with a mock service. Covers every HTTP status code path — 401, 422, 500 — without a network or credentials. Shows the pattern paying off immediately.</div>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <footer>
+      <span>gh-issue-reporter · patterns</span>
+      <span>Injected Service Router</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const target = document.getElementById(btn.dataset.copyTarget);
+      if (!target) return;
+      try {
+        await navigator.clipboard.writeText(target.innerText);
+        const orig = btn.textContent;
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1400);
+      } catch { btn.textContent = 'Press ⌘C'; }
+    });
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      const container = btn.closest('.code');
+      container.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      container.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === tab));
+    });
+  });
+
+  const tocLinks = Array.from(document.querySelectorAll('.toc a'));
+  const sections = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const setActive = id => tocLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+  const observer = new IntersectionObserver(entries => {
+    const visible = entries.filter(e => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+    if (visible[0]) setActive(visible[0].target.id);
+  }, { rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.25, 0.5, 1] });
+  sections.forEach(s => observer.observe(s));
+  tocLinks.forEach(a => {
+    a.addEventListener('click', e => {
+      const id = a.getAttribute('href').slice(1);
+      const el = document.getElementById(id);
+      if (!el) return;
+      e.preventDefault();
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.replaceState(null, '', '#' + id);
+    });
+  });
+</script>
+
+</body>
+</html>
